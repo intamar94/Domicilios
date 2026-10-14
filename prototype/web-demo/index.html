@@ -1,0 +1,685 @@
+<title>FARO Prototyp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: eine mobile Spalte; Rollenschalter oben; Aufträge als Karten mit Fortschrittsleiste */
+:root {
+  --bg: #eef3f3;
+  --surface: #ffffff;
+  --surface-2: #f6f9f9;
+  --ink: #0f2233;
+  --muted: #4f6273;
+  --line: #d3dfe1;
+  --teal: #0b6f6a;
+  --teal-ink: #ffffff;
+  --teal-soft: #dcefed;
+  --amber: #f2a516;
+  --amber-soft: #fff1d2;
+  --amber-ink: #6b4300;
+  --deep: #123a5c;
+  --deep-soft: #e1ebf4;
+  --ok: #1b6e3a;
+  --ok-soft: #dff1e5;
+  --bad: #a8261d;
+  --bad-soft: #fbe3e0;
+  --focus: #f2a516;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1620; --surface: #112331; --surface-2: #0d1d29; --ink: #e6eef2; --muted: #a2b4c2; --line: #233a4b;
+    --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a;
+    --deep: #a9cdf0; --deep-soft: #16304a; --ok: #6fd596; --ok-soft: #143a24; --bad: #ff9a90; --bad-soft: #3d1a17; --focus: #f5b843;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1620; --surface: #112331; --surface-2: #0d1d29; --ink: #e6eef2; --muted: #a2b4c2; --line: #233a4b;
+  --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a;
+  --deep: #a9cdf0; --deep-soft: #16304a; --ok: #6fd596; --ok-soft: #143a24; --bad: #ff9a90; --bad-soft: #3d1a17; --focus: #f5b843;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 96px;
+  display: grid;
+  gap: 16px;
+}
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: 1.25rem; font-weight: 800; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+
+/* Kopf */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; color: var(--deep); }
+.brand small { display: block; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em; }
+.proto { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--amber-ink); background: var(--amber-soft); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+
+.roles { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px; gap: 4px; }
+.roles button { border: 0; background: transparent; padding: 10px 8px; border-radius: 10px; font-weight: 700; cursor: pointer; min-height: 48px; }
+.roles button span { display: block; font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.roles button[aria-pressed="true"] { background: var(--teal); color: var(--teal-ink); }
+.roles button[aria-pressed="true"] span { color: inherit; opacity: 0.85; }
+
+.banner { font-size: 0.9rem; padding: 10px 12px; border-radius: 10px; background: var(--deep-soft); color: var(--ink); }
+
+.sectionhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.note { color: var(--muted); font-size: 0.9rem; }
+.stack { display: grid; gap: 12px; }
+
+/* Buttons */
+.btn { border: 1px solid transparent; border-radius: 10px; padding: 10px 14px; min-height: 44px; font-weight: 700; cursor: pointer; background: var(--surface-2); border-color: var(--line); }
+.btn.primary { background: var(--teal); color: var(--teal-ink); border-color: var(--teal); }
+.btn.accent { background: var(--amber); color: #2b1b00; border-color: var(--amber); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--bad); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Formular */
+form.card { gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field label, .legend { font-weight: 700; font-size: 0.95rem; }
+.field .hint { font-size: 0.85rem; color: var(--muted); }
+input[type=text], input[type=time], select, textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); min-height: 44px;
+}
+textarea { min-height: 72px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 7.5rem 1fr; gap: 10px; }
+.row2 > * { min-width: 0; }
+.sizes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sizes label { border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 2px; cursor: pointer; background: var(--surface-2); font-size: 0.85rem; }
+.sizes label strong { font-size: 0.95rem; }
+.sizes input { position: absolute; opacity: 0; pointer-events: none; }
+.sizes label:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
+.sizes label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; }
+.check input { width: 22px; height: 22px; margin-top: 1px; flex: none; accent-color: var(--teal); }
+.price { display: grid; gap: 4px; padding: 12px; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--line); font-variant-numeric: tabular-nums; }
+.price div { display: flex; justify-content: space-between; gap: 12px; }
+.price .total { font-weight: 700; border-top: 1px solid var(--line); padding-top: 6px; }
+.err { color: var(--bad); font-size: 0.9rem; font-weight: 700; }
+
+/* Karten */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
+.card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.cat { font-family: var(--display); font-weight: 600; font-size: 1.05rem; }
+.chip { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.t-wait { background: var(--amber-soft); color: var(--amber-ink); }
+.t-active { background: var(--teal-soft); color: var(--teal); }
+.t-deliv { background: var(--deep-soft); color: var(--deep); }
+.t-ok { background: var(--ok-soft); color: var(--ok); }
+.t-off { background: var(--surface-2); color: var(--muted); }
+.t-bad { background: var(--bad-soft); color: var(--bad); }
+.tag { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.route { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.95rem; }
+.route b { color: var(--ink); font-weight: 700; }
+.desc { font-size: 0.95rem; overflow-wrap: anywhere; }
+.steps { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 0; margin: 0; }
+.steps li { height: 6px; border-radius: 3px; background: var(--line); }
+.steps li.on { background: var(--teal); }
+.steplabel { font-size: 0.8rem; color: var(--muted); }
+.detail { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.95rem; overflow-wrap: anywhere; }
+.detail dt { font-size: 0.8rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.detail dd { margin: 0 0 4px; }
+.pin { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--amber-soft); color: var(--amber-ink); }
+.pin strong { font-family: var(--display); font-size: 1.8rem; letter-spacing: 0.3em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.card footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.money { font-family: var(--display); font-weight: 800; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.money small { display: block; font-family: var(--body); font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.confirm { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pinrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.pinrow input { width: 8rem; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+
+.earn { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--deep); color: var(--bg); }
+.earn .money small { color: inherit; opacity: 0.8; }
+.empty { padding: 18px 14px; border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); text-align: center; }
+
+.toast {
+  position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; pointer-events: none;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.toast p { background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; max-width: 520px; font-weight: 700; }
+.foot { font-size: 0.8rem; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .card { transition: border-color 0.2s; }
+}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <path d="M17 6 L33 1 L33 11 Z" fill="var(--amber)" opacity="0.85"/>
+        <rect x="12" y="8" width="10" height="22" rx="2" fill="var(--teal)"/>
+        <rect x="10" y="28" width="14" height="4" rx="1" fill="var(--deep)"/>
+        <circle cx="17" cy="9" r="3.5" fill="var(--amber)"/>
+      </svg>
+      <div><h1>FARO</h1><small>Erledigungen aus der Nachbarschaft</small></div>
+    </div>
+    <span class="proto">Prototyp</span>
+  </div>
+
+  <div class="roles" role="group" aria-label="Rolle wählen">
+    <button type="button" id="role-kunde" aria-pressed="true">Ich brauche Hilfe<span>Auftrag aufgeben</span></button>
+    <button type="button" id="role-helfer" aria-pressed="false">Ich helfe<span>Aufträge annehmen</span></button>
+  </div>
+
+  <p class="banner" id="banner" hidden></p>
+
+  <section id="view-kunde" class="stack" aria-labelledby="h-kunde">
+    <div class="sectionhead">
+      <h2 id="h-kunde">Meine Aufträge</h2>
+      <button type="button" class="btn accent" id="btn-new" aria-expanded="false" aria-controls="form-new">Neuer Auftrag</button>
+    </div>
+
+    <form id="form-new" class="card" hidden novalidate>
+      <h3>Was soll erledigt werden?</h3>
+      <div class="field">
+        <label for="f-cat">Kategorie</label>
+        <select id="f-cat" required></select>
+        <span class="hint" id="f-cat-hint"></span>
+      </div>
+      <div class="field">
+        <span class="legend">Abholung</span>
+        <div class="row2">
+          <input type="text" id="f-from-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Abholung" required>
+          <input type="text" id="f-from-addr" placeholder="Geschäft oder Adresse" aria-label="Geschäft oder Adresse der Abholung" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-code">Abholnummer oder Code <span class="hint">(optional)</span></label>
+        <input type="text" id="f-code" placeholder="z. B. Bestellnummer 4711-2290">
+        <span class="hint">Sieht der Helfer erst nach der Annahme.</span>
+      </div>
+      <div class="field">
+        <span class="legend">Bringen zu</span>
+        <div class="row2">
+          <input type="text" id="f-to-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Ziel" required>
+          <input type="text" id="f-to-addr" placeholder="Straße, Hausnummer, Name am Klingelschild" aria-label="Zieladresse" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-until">Erledigt bis heute</label>
+        <input type="time" id="f-until" value="18:00" required>
+      </div>
+      <div class="field">
+        <span class="legend" id="l-size">Größe</span>
+        <div class="sizes" role="radiogroup" aria-labelledby="l-size" id="f-sizes"></div>
+      </div>
+      <div class="field">
+        <label for="f-desc">Beschreibung</label>
+        <textarea id="f-desc" placeholder="z. B. Zwei Pakete, Abholung an der Info-Theke im Erdgeschoss"></textarea>
+      </div>
+      <label class="check"><input type="checkbox" id="f-paid"> Alles ist bereits bezahlt. An der Kasse ist nichts mehr zu zahlen.</label>
+      <label class="check"><input type="checkbox" id="f-allowed"> Keine verbotenen Artikel (Medikamente, Alkohol, Tabak, Bargeld, Ausweise, Gefahrgut).</label>
+      <div class="price" id="f-price" aria-live="polite"></div>
+      <p class="err" id="f-err" role="alert" hidden></p>
+      <div class="actions">
+        <button type="submit" class="btn primary">Auftrag veröffentlichen</button>
+        <button type="button" class="btn ghost" id="btn-cancel-form">Abbrechen</button>
+      </div>
+    </form>
+
+    <div id="list-kunde" class="stack"></div>
+  </section>
+
+  <section id="view-helfer" class="stack" hidden aria-labelledby="h-helfer">
+    <div class="earn" id="earn"></div>
+    <h2 id="h-helfer">Meine Einsätze</h2>
+    <div id="list-mine" class="stack"></div>
+    <h2>Aufträge in deiner Nähe</h2>
+    <p class="note">Du entscheidest selbst, was du annimmst. Kein Zeitplan, keine Nachteile beim Ablehnen. Genaue Adressen siehst du erst nach der Annahme.</p>
+    <div id="list-market" class="stack"></div>
+  </section>
+
+  <p class="foot">Prototyp zum Ausprobieren: keine echten Zahlungen, Beispielpreise. Alle Tester sehen dieselben Aufträge.</p>
+</div>
+
+<div class="toast" aria-live="polite"><p id="toast" hidden></p></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CATS = {
+    pickup_click_collect: { de: "Click & Collect abholen", hint: "Bezahlte Bestellung im Geschäft abholen und bringen." },
+    task_parcel_return: { de: "Paket zurückschicken", hint: "Fertig verpacktes, frankiertes Paket zur Paketstelle bringen." },
+    task_parcel_pickup: { de: "Paket abholen", hint: "Paket im Paketshop oder an der Packstation abholen." },
+    task_key_handover: { de: "Schlüssel übergeben", hint: "Schlüssel von A nach B bringen, nur persönliche Übergabe." },
+    task_documents: { de: "Dokumente überbringen", hint: "Verschlossener Umschlag, persönliche Übergabe." },
+    task_repair_service: { de: "Reparatur & Reinigung", hint: "Zur Reparatur oder Reinigung bringen oder dort abholen (bereits bezahlt)." }
+  };
+  var SIZES = {
+    S: { de: "Klein", hint: "passt in eine Tasche", reward: 600 },
+    M: { de: "Mittel", hint: "passt in einen Rucksack", reward: 800 },
+    L: { de: "Groß", hint: "große Tasche, max. 10 kg", reward: 1000 }
+  };
+  var FEE = 150;
+  var STATUS = {
+    published: { de: "Sucht Helfer", tone: "wait", step: 1 },
+    accepted: { de: "Angenommen", tone: "active", step: 2 },
+    picked_up: { de: "Abgeholt", tone: "active", step: 3 },
+    delivered: { de: "Zugestellt", tone: "deliv", step: 4 },
+    completed: { de: "Abgeschlossen", tone: "ok", step: 5 },
+    cancelled: { de: "Storniert", tone: "off", step: 0 },
+    not_feasible: { de: "Nicht durchführbar", tone: "bad", step: 0 }
+  };
+  var STEP_TEXT = ["", "Wartet auf einen Helfer", "Helfer ist unterwegs zur Abholung", "Abgeholt, auf dem Weg zu dir", "Zugestellt, bitte bestätigen", "Erledigt"];
+  var REASONS = {
+    payment_required: "An der Kasse sollte noch gezahlt werden",
+    not_ready: "Bestellung war nicht abholbereit",
+    prohibited_item: "Verbotener Artikel",
+    other: "Anderer Grund"
+  };
+
+  var state = { role: "kunde", me: null, errands: [], loaded: false, confirm: null, pinDraft: {}, nfReason: {}, busy: {} };
+  var store = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function euro(cents) { return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" }); }
+  function ls(key, val) {
+    try {
+      if (val === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, val);
+    } catch (e) { return null; }
+  }
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+
+  /* ---------- Speicher: geteilte Datenbank oder lokal ---------- */
+  function makeDbStore(db) {
+    var col = db.collection("errands");
+    return {
+      shared: true,
+      subscribe: function (cb, onErr) {
+        return col.orderBy("createdAt", "desc").limit(300).onSnapshot(function (snap) {
+          cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
+        }, onErr);
+      },
+      add: function (d) { return col.add(d); },
+      update: function (id, patch) { return db.doc("errands/" + id).update(patch); },
+      claim: function (id, me) {
+        var ref = db.doc("errands/" + id);
+        return ref.acquire({ holder: me, ttlMs: 5000 }).then(function (l) {
+          if (!l.acquired) return "busy";
+          return ref.get().then(function (s) {
+            if (!s.exists || s.data().status !== "published") return "taken";
+            var now = Date.now();
+            return ref.update({ status: "accepted", helferId: me, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
+          });
+        });
+      }
+    };
+  }
+  function makeLocalStore() {
+    var items = [];
+    try { items = JSON.parse(ls("faro-demo-errands") || "[]"); } catch (e) { items = []; }
+    var subs = [];
+    function sorted() { return items.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }); }
+    function emit() { ls("faro-demo-errands", JSON.stringify(items)); subs.forEach(function (f) { f(sorted()); }); }
+    var api = {
+      shared: false,
+      subscribe: function (cb) { subs.push(cb); cb(sorted()); return function () {}; },
+      add: function (d) { items.push(Object.assign({ id: "l" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, d)); emit(); return Promise.resolve(); },
+      update: function (id, patch) {
+        items = items.map(function (x) { return x.id === id ? Object.assign({}, x, patch) : x; });
+        emit();
+        return Promise.resolve();
+      },
+      claim: function (id, me) {
+        var x = items.filter(function (i) { return i.id === id; })[0];
+        if (!x || x.status !== "published") return Promise.resolve("taken");
+        var now = Date.now();
+        return api.update(id, { status: "accepted", helferId: me, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
+      }
+    };
+    return api;
+  }
+
+  /* ---------- Formular ---------- */
+  function initForm() {
+    var sel = $("f-cat");
+    Object.keys(CATS).forEach(function (k) {
+      var o = document.createElement("option");
+      o.value = k; o.textContent = CATS[k].de;
+      sel.appendChild(o);
+    });
+    var sizes = $("f-sizes");
+    Object.keys(SIZES).forEach(function (k, i) {
+      var l = document.createElement("label");
+      l.innerHTML = '<input type="radio" name="size" id="f-size-' + k + '" value="' + k + '"' + (i === 1 ? " checked" : "") + '><strong>' + esc(SIZES[k].de) + '</strong><span>' + esc(SIZES[k].hint) + "</span>";
+      sizes.appendChild(l);
+    });
+    sel.addEventListener("change", updateFormInfo);
+    sizes.addEventListener("change", updateFormInfo);
+    updateFormInfo();
+
+    $("btn-new").addEventListener("click", function () { setFormOpen($("form-new").hidden); });
+    $("btn-cancel-form").addEventListener("click", function () { setFormOpen(false); });
+    $("form-new").addEventListener("submit", onSubmit);
+  }
+  function currentSize() {
+    var c = document.querySelector('input[name="size"]:checked');
+    return c ? c.value : "M";
+  }
+  function updateFormInfo() {
+    $("f-cat-hint").textContent = CATS[$("f-cat").value].hint;
+    var r = SIZES[currentSize()].reward;
+    $("f-price").innerHTML =
+      "<div><span>Vergütung für den Helfer</span><span>" + euro(r) + "</span></div>" +
+      "<div><span>FARO-Servicegebühr</span><span>" + euro(FEE) + "</span></div>" +
+      '<div class="total"><span>Gesamt (Beispielpreis)</span><span>' + euro(r + FEE) + "</span></div>";
+  }
+  function setFormOpen(open, noFocus) {
+    $("form-new").hidden = !open;
+    $("btn-new").setAttribute("aria-expanded", open ? "true" : "false");
+    $("btn-new").hidden = open;
+    if (open && !noFocus) $("f-cat").focus();
+  }
+  function onSubmit(ev) {
+    ev.preventDefault();
+    var err = $("f-err");
+    var plzA = $("f-from-plz").value.trim(), plzB = $("f-to-plz").value.trim();
+    var addrA = $("f-from-addr").value.trim(), addrB = $("f-to-addr").value.trim();
+    var msg = "";
+    if (!/^\d{5}$/.test(plzA) || !/^\d{5}$/.test(plzB)) msg = "Bitte eine gültige fünfstellige PLZ für Abholung und Ziel eingeben.";
+    else if (!addrA || !addrB) msg = "Bitte Abholort und Zieladresse angeben.";
+    else if (!$("f-until").value) msg = "Bitte angeben, bis wann der Auftrag erledigt sein soll.";
+    else if (!$("f-paid").checked) msg = "Im MVP nur bereits bezahlte Aufträge. Bitte bestätigen, dass nichts mehr zu zahlen ist.";
+    else if (!$("f-allowed").checked) msg = "Bitte bestätigen, dass keine verbotenen Artikel dabei sind.";
+    if (msg) { err.textContent = msg; err.hidden = false; return; }
+    err.hidden = true;
+    if (!store || !state.me) { toast("Noch nicht verbunden. Bitte kurz warten."); return; }
+    var size = currentSize();
+    var now = Date.now();
+    var doc = {
+      category: $("f-cat").value,
+      size: size,
+      pickupArea: plzA,
+      pickupAddress: addrA,
+      pickupCode: $("f-code").value.trim(),
+      dropArea: plzB,
+      dropAddress: addrB,
+      until: $("f-until").value,
+      description: $("f-desc").value.trim(),
+      reward: SIZES[size].reward,
+      fee: FEE,
+      status: "published",
+      clientId: state.me,
+      helferId: null,
+      pin: String(Math.floor(1000 + Math.random() * 9000)),
+      example: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    store.add(doc).then(function () {
+      $("form-new").reset();
+      $("f-until").value = "18:00";
+      $("f-size-M").checked = true;
+      updateFormInfo();
+      setFormOpen(false);
+      toast("Auftrag veröffentlicht. Helfer in der Nähe sehen ihn jetzt.");
+    }).catch(function (e) { toast(errorText(e)); });
+  }
+
+  /* ---------- Darstellung ---------- */
+  function chip(st) { var s = STATUS[st] || STATUS.published; return '<span class="chip t-' + s.tone + '">' + esc(s.de) + "</span>"; }
+  function steps(st) {
+    var n = (STATUS[st] || {}).step || 0;
+    if (!n) return "";
+    var li = "";
+    for (var i = 1; i <= 5; i++) li += '<li class="' + (i <= n ? "on" : "") + '"></li>';
+    return '<ol class="steps" aria-label="Fortschritt: Schritt ' + n + " von 5\">" + li + '</ol><p class="steplabel">' + esc(STEP_TEXT[n]) + "</p>";
+  }
+  function route(e) {
+    return '<p class="route"><b>' + esc(e.pickupArea) + "</b><span aria-label=\"nach\">→</span><b>" + esc(e.dropArea) + "</b><span>· bis " + esc(e.until) + " Uhr</span><span>· " + esc((SIZES[e.size] || SIZES.M).de) + "</span></p>";
+  }
+  function exampleTag(e) { return e.example ? '<span class="tag">Beispiel</span>' : ""; }
+  function confirmBox(id, kind, text, okLabel, okClass) {
+    return '<div class="confirm" role="group"><p>' + esc(text) + '</p><div class="actions"><button type="button" class="btn ' + okClass + '" data-act="' + kind + '-yes" data-id="' + esc(id) + '">' + esc(okLabel) + '</button><button type="button" class="btn ghost" data-act="confirm-no">Zurück</button></div></div>';
+  }
+  function isConfirm(id, kind) { return state.confirm && state.confirm.id === id && state.confirm.kind === kind; }
+
+  function kundeCard(e) {
+    var acts = "";
+    if (e.status === "published" || e.status === "accepted") {
+      acts = isConfirm(e.id, "cancel")
+        ? confirmBox(e.id, "cancel", e.status === "accepted" ? "Ein Helfer hat schon angenommen. Trotzdem stornieren? (Im Prototyp ohne Kosten.)" : "Auftrag wirklich stornieren?", "Stornieren", "danger")
+        : '<button type="button" class="btn ghost danger" data-act="cancel" data-id="' + esc(e.id) + '">Stornieren</button>';
+    }
+    if (e.status === "delivered") {
+      acts = '<button type="button" class="btn primary" data-act="confirm-receipt" data-id="' + esc(e.id) + '">Erhalt bestätigen</button>';
+    }
+    var pin = (e.status === "accepted" || e.status === "picked_up")
+      ? '<div class="pin"><span>Dein Übergabe-PIN</span><strong>' + esc(e.pin) + "</strong><small>Erst bei der Übergabe weitergeben.</small></div>"
+      : "";
+    var nf = e.status === "not_feasible" ? '<p class="desc">Grund: ' + esc(REASONS[e.notFeasibleReason] || "–") + "</p>" : "";
+    return '<article class="card"><header><div>' + exampleTag(e) + '<div class="cat">' + esc(CATS[e.category] ? CATS[e.category].de : e.category) + "</div></div>" + chip(e.status) + "</header>" +
+      route(e) + steps(e.status) + pin + nf +
+      (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      '<footer><p class="money">' + euro((e.reward || 0) + (e.fee || 0)) + "<small>Gesamt, Beispielpreis</small></p>" + (acts ? '<div class="actions">' + acts + "</div>" : "") + "</footer></article>";
+  }
+
+  function helferMineCard(e) {
+    var detail = "";
+    if (e.status === "accepted" || e.status === "picked_up") {
+      detail = '<dl class="detail"><dt>Abholen bei</dt><dd>' + esc(e.pickupArea) + " · " + esc(e.pickupAddress) + "</dd>" +
+        (e.pickupCode ? "<dt>Abholnummer</dt><dd>" + esc(e.pickupCode) + "</dd>" : "") +
+        "<dt>Bringen zu</dt><dd>" + esc(e.dropArea) + " · " + esc(e.dropAddress) + "</dd></dl>";
+    }
+    var acts = "";
+    if (e.status === "accepted") {
+      if (isConfirm(e.id, "nf")) {
+        var opts = Object.keys(REASONS).map(function (k) { return '<option value="' + k + '"' + (state.nfReason[e.id] === k ? " selected" : "") + ">" + esc(REASONS[k]) + "</option>"; }).join("");
+        acts = '<div class="confirm"><label for="nf-' + esc(e.id) + '"><b>Warum nicht durchführbar?</b></label><select id="nf-' + esc(e.id) + '" data-nf="' + esc(e.id) + '">' + opts + '</select><p class="note">Du zahlst niemals etwas aus. Der Auftrag wird beendet, ohne Nachteile für dich.</p><div class="actions"><button type="button" class="btn danger" data-act="nf-yes" data-id="' + esc(e.id) + '">Melden</button><button type="button" class="btn ghost" data-act="confirm-no">Zurück</button></div></div>';
+      } else if (isConfirm(e.id, "release")) {
+        acts = confirmBox(e.id, "release", "Auftrag freigeben? Ohne Nachteile für dich. Er geht zurück in die Liste.", "Freigeben", "");
+      } else {
+        acts = '<button type="button" class="btn primary" data-act="pickup" data-id="' + esc(e.id) + '">Abgeholt</button>' +
+          '<button type="button" class="btn" data-act="nf" data-id="' + esc(e.id) + '">Nicht durchführbar</button>' +
+          '<button type="button" class="btn ghost" data-act="release" data-id="' + esc(e.id) + '">Freigeben</button>';
+      }
+    } else if (e.status === "picked_up") {
+      if (e.category === "task_parcel_return") {
+        acts = '<button type="button" class="btn primary" data-act="deliver-receipt" data-id="' + esc(e.id) + '">Abgegeben, Beleg erhalten</button>';
+      } else {
+        var v = state.pinDraft[e.id] || "";
+        acts = '<div class="confirm"><label for="pin-' + esc(e.id) + '"><b>Übergabe-PIN des Empfängers</b></label><div class="pinrow"><input type="text" id="pin-' + esc(e.id) + '" data-pin="' + esc(e.id) + '" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(v) + '"><button type="button" class="btn primary" data-act="deliver" data-id="' + esc(e.id) + '">Zustellen</button></div></div>';
+      }
+    } else if (e.status === "delivered") {
+      acts = '<p class="note">Wartet auf die Bestätigung des Kunden.</p>';
+    }
+    return '<article class="card"><header><div>' + exampleTag(e) + '<div class="cat">' + esc(CATS[e.category] ? CATS[e.category].de : e.category) + "</div></div>" + chip(e.status) + "</header>" +
+      route(e) + detail + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      '<footer><p class="money">' + euro(e.reward || 0) + "<small>deine Vergütung</small></p></footer>" +
+      (acts ? '<div class="actions">' + acts + "</div>" : "") + "</article>";
+  }
+
+  function marketCard(e) {
+    var own = e.clientId === state.me;
+    return '<article class="card"><header><div>' + exampleTag(e) + (own ? '<span class="tag">Dein eigener Auftrag</span>' : "") + '<div class="cat">' + esc(CATS[e.category] ? CATS[e.category].de : e.category) + "</div></div></header>" +
+      route(e) + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      '<footer><p class="money">' + euro(e.reward || 0) + '<small>Vergütung</small></p><button type="button" class="btn accent" data-act="accept" data-id="' + esc(e.id) + '"' + (state.busy[e.id] ? " disabled" : "") + ">Annehmen</button></footer></article>";
+  }
+
+  function render() {
+    var kunde = state.role === "kunde";
+    $("role-kunde").setAttribute("aria-pressed", kunde ? "true" : "false");
+    $("role-helfer").setAttribute("aria-pressed", kunde ? "false" : "true");
+    $("view-kunde").hidden = !kunde;
+    $("view-helfer").hidden = kunde;
+
+    var active = document.activeElement && document.activeElement.id;
+    var me = state.me;
+    var loading = '<p class="empty">Aufträge werden geladen …</p>';
+
+    var mineK = state.errands.filter(function (e) { return e.clientId === me && me; });
+    $("list-kunde").innerHTML = !state.loaded ? loading : (mineK.length ? mineK.map(kundeCard).join("") :
+      '<p class="empty">Noch keine Aufträge. Tippe auf „Neuer Auftrag“ und lass z. B. eine Click-&-Collect-Bestellung abholen.</p>');
+
+    var mineH = state.errands.filter(function (e) { return e.helferId === me && me && ["accepted", "picked_up", "delivered", "completed"].indexOf(e.status) >= 0; });
+    var open = mineH.filter(function (e) { return e.status !== "completed"; });
+    $("list-mine").innerHTML = !state.loaded ? loading : (open.length ? open.map(helferMineCard).join("") :
+      '<p class="empty">Du hast gerade keinen Einsatz. Nimm unten einen Auftrag an, wenn du Zeit hast.</p>');
+
+    var done = mineH.filter(function (e) { return e.status === "completed"; });
+    var sum = done.reduce(function (a, e) { return a + (e.reward || 0); }, 0);
+    $("earn").innerHTML = '<p class="money">' + euro(sum) + "<small>verdient im Prototyp · " + done.length + (done.length === 1 ? " Auftrag" : " Aufträge") + '</small></p><p class="note" style="color:inherit;opacity:.85;max-width:14rem">Keine echte Auszahlung. Für echtes Geld brauchst du später ein Kleingewerbe.</p>';
+
+    var market = state.errands.filter(function (e) { return e.status === "published"; });
+    $("list-market").innerHTML = !state.loaded ? loading : (market.length ? market.map(marketCard).join("") :
+      '<p class="empty">Gerade keine offenen Aufträge in deiner Nähe. Schau später wieder vorbei.</p>');
+
+    if (active) { var el = $(active); if (el) { el.focus(); if (el.setSelectionRange && el.value) { try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } } }
+  }
+
+  function errorText(e) {
+    var c = e && e.code;
+    if (c === "quota_exceeded") return "Speicher voll. Bitte alte Testaufträge löschen lassen.";
+    if (c === "revoked" || c === "not_granted") return "Kein Zugriff mehr auf die Daten.";
+    return "Das hat nicht geklappt. Bitte noch einmal versuchen.";
+  }
+  function find(id) { return state.errands.filter(function (e) { return e.id === id; })[0]; }
+  function patch(id, p, okMsg) {
+    p.updatedAt = Date.now();
+    state.confirm = null;
+    return store.update(id, p).then(function () { if (okMsg) toast(okMsg); }).catch(function (e) { toast(errorText(e)); render(); });
+  }
+
+  /* ---------- Aktionen ---------- */
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    var act = b.getAttribute("data-act"), id = b.getAttribute("data-id");
+    var e = id ? find(id) : null;
+    if (id && !e) return;
+    switch (act) {
+      case "confirm-no": state.confirm = null; render(); break;
+      case "cancel": case "release": case "nf":
+        state.confirm = { id: id, kind: act };
+        if (act === "nf" && !state.nfReason[id]) state.nfReason[id] = "payment_required";
+        render(); break;
+      case "cancel-yes":
+        if (e.clientId === state.me && (e.status === "published" || e.status === "accepted")) patch(id, { status: "cancelled" }, "Auftrag storniert.");
+        break;
+      case "release-yes":
+        if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "published", helferId: null }, "Freigegeben. Der Auftrag ist wieder in der Liste.");
+        break;
+      case "nf-yes":
+        if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "not_feasible", notFeasibleReason: state.nfReason[id] || "other" }, "Gemeldet. Danke, dass du nichts ausgelegt hast.");
+        break;
+      case "pickup":
+        if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "picked_up", pickedUpAt: Date.now() }, "Abgeholt. Jetzt zum Ziel.");
+        break;
+      case "deliver":
+        if (e.helferId === state.me && e.status === "picked_up") {
+          var v = (state.pinDraft[id] || "").trim();
+          if (v !== e.pin) { toast("Der PIN stimmt nicht. Bitte beim Empfänger nachfragen."); break; }
+          delete state.pinDraft[id];
+          patch(id, { status: "delivered", deliveredAt: Date.now() }, "Zugestellt. Danke!");
+        }
+        break;
+      case "deliver-receipt":
+        if (e.helferId === state.me && e.status === "picked_up") patch(id, { status: "delivered", deliveredAt: Date.now() }, "Abgabe gemeldet. Danke!");
+        break;
+      case "confirm-receipt":
+        if (e.clientId === state.me && e.status === "delivered") patch(id, { status: "completed", completedAt: Date.now() }, "Bestätigt. Der Auftrag ist erledigt.");
+        break;
+      case "accept":
+        if (e.status !== "published" || state.busy[id]) break;
+        state.busy[id] = true; render();
+        store.claim(id, state.me).then(function (r) {
+          if (r === "ok") toast("Angenommen. Die genaue Adresse steht jetzt unter „Meine Einsätze“.");
+          else if (r === "busy") toast("Jemand nimmt diesen Auftrag gerade an. Bitte kurz warten.");
+          else toast("Schon vergeben. Schau dir die anderen Aufträge an.");
+        }).catch(function (err) { toast(errorText(err)); }).then(function () { delete state.busy[id]; render(); });
+        break;
+    }
+  });
+  document.addEventListener("input", function (ev) {
+    var t = ev.target;
+    if (t.getAttribute && t.getAttribute("data-pin")) { t.value = t.value.replace(/\D/g, "").slice(0, 4); state.pinDraft[t.getAttribute("data-pin")] = t.value; }
+    if (t.id === "f-from-plz" || t.id === "f-to-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
+  });
+  document.addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (t.getAttribute && t.getAttribute("data-nf")) state.nfReason[t.getAttribute("data-nf")] = t.value;
+  });
+  function setRole(r) { state.role = r; state.confirm = null; ls("faro-demo-role", r); render(); }
+  $("role-kunde").addEventListener("click", function () { setRole("kunde"); });
+  $("role-helfer").addEventListener("click", function () { setRole("helfer"); });
+
+  /* ---------- Start ---------- */
+  var savedRole = ls("faro-demo-role");
+  if (savedRole === "helfer" || savedRole === "kunde") state.role = savedRole;
+  initForm();
+  render();
+
+  function localId() {
+    var id = ls("faro-demo-me");
+    if (!id) { id = "local-" + Math.random().toString(36).slice(2, 10); ls("faro-demo-me", id); }
+    return id;
+  }
+  function use(name) {
+    var c = window.claude;
+    if (!c || typeof c.use !== "function") return Promise.resolve(null);
+    return c.use(name).catch(function () { return null; });
+  }
+  Promise.all([use("db"), use("user")]).then(function (r) {
+    var db = r[0], user = r[1];
+    var idP = user ? user.id().catch(function () { return null; }) : Promise.resolve(null);
+    return idP.then(function (uid) {
+      state.me = uid || localId();
+      store = db ? makeDbStore(db) : makeLocalStore();
+      if (!store.shared) {
+        $("banner").textContent = "Offline-Modus: Aufträge werden nur auf diesem Gerät gespeichert.";
+        $("banner").hidden = false;
+      }
+      store.subscribe(function (list) {
+        state.errands = list;
+        state.loaded = true;
+        if (!list.some(function (e) { return e.clientId === state.me; }) && state.role === "kunde" && !state.formOpened) {
+          state.formOpened = true;
+          setFormOpen(true, true);
+        }
+        render();
+      }, function (e) {
+        $("banner").textContent = "Die Verbindung zu den Aufträgen ist unterbrochen. Bitte die Seite neu laden.";
+        $("banner").hidden = false;
+        toast(errorText(e));
+      });
+    });
+  });
+})();
+</script>
