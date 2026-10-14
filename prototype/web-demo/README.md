@@ -6,8 +6,11 @@ Prototipo clicable, en alemán, del flujo del Cliente (00.2) y del Helfer (00.3)
 - **Datos:** base de datos compartida del artefacto (colección `errands`). Si no está disponible, usa el almacenamiento local del navegador (modo offline, un solo dispositivo).
 - **Qué hace:**
   - El Cliente publica un mandado (categorías de 00.1, checklist de «ya pagado» y «sin artículos prohibidos», precio de ejemplo) y ve su estado y su PIN.
-  - El Helfer ve la lista sin direcciones exactas, acepta (con bloqueo para que dos personas no acepten el mismo), recoge, marca «no realizable» o suelta el mandado sin penalización, y entrega con el PIN o con el comprobante de la devolución.
-- **Qué no hace (a propósito):** pagos reales (H3), registro, fotos de evidencia, mapas, avisos, incidencias de entrega, reclamaciones ni expiración automática.
+  - El Helfer elige su zona (código postal y alcance), ve solo los mandados de esa zona y sin direcciones exactas, acepta (con bloqueo para que dos personas no acepten el mismo), recoge, marca «no realizable» o suelta el mandado sin penalización, y entrega con el PIN o con el comprobante de la devolución.
+  - Cada persona elige su nombre visible. Cliente y Helfer se ven el nombre y tienen un chat del mandado (con respuestas rápidas) mientras está en curso.
+  - El formulario se adapta a la categoría (etiquetas, código, tamaño, texto de «ya pagado»). Pide día y hora con al menos 30 minutos de margen, y el mandado caduca solo si nadie lo acepta a tiempo.
+  - Los mandados de ejemplo enseñan su PIN al Helfer y se confirman solos al entregarlos.
+- **Qué no hace (a propósito):** pagos reales (H3), registro, fotos de evidencia, mapas, avisos, incidencias de entrega ni reclamaciones.
 - **Limitación de privacidad:** en el prototipo todos los datos del mandado (incluido el PIN) están en un documento compartido. En la app real, las direcciones exactas y los códigos van en tablas separadas protegidas con RLS (00.5).
 - **Para probarlo a solas:** se pueden aceptar los propios mandados desde «Ich helfe».
 

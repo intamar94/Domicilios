@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
 <style>
-/* Layout: eine mobile Spalte; Rollenschalter oben; Aufträge als Karten mit Fortschrittsleiste */
+/* Layout: eine mobile Spalte; Rollenschalter oben; Aufträge als Karten mit Fortschrittsleiste und Chat */
 :root {
   --bg: #eef3f3;
   --surface: #ffffff;
@@ -63,6 +63,7 @@ body {
 }
 h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
 h2 { font-size: 1.25rem; font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 600; }
 p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
@@ -81,6 +82,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .roles button[aria-pressed="true"] span { color: inherit; opacity: 0.85; }
 
 .banner { font-size: 0.9rem; padding: 10px 12px; border-radius: 10px; background: var(--deep-soft); color: var(--ink); }
+.who { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.95rem; }
+.linkbtn { border: 0; background: none; padding: 6px 4px; min-height: 40px; color: var(--teal); font-weight: 700; text-decoration: underline; cursor: pointer; }
 
 .sectionhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .note { color: var(--muted); font-size: 0.9rem; }
@@ -92,13 +95,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.accent { background: var(--amber); color: #2b1b00; border-color: var(--amber); }
 .btn.ghost { background: transparent; }
 .btn.danger { color: var(--bad); }
+.btn.small { min-height: 40px; padding: 6px 10px; font-size: 0.9rem; }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Formular */
 form.card { gap: 14px; }
 .field { display: grid; gap: 6px; }
 .field label, .legend { font-weight: 700; font-size: 0.95rem; }
-.field .hint { font-size: 0.85rem; color: var(--muted); }
+.hint { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
 input[type=text], input[type=time], select, textarea {
   width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); min-height: 44px;
 }
@@ -117,6 +121,7 @@ textarea { min-height: 72px; resize: vertical; }
 .price div { display: flex; justify-content: space-between; gap: 12px; }
 .price .total { font-weight: 700; border-top: 1px solid var(--line); padding-top: 6px; }
 .err { color: var(--bad); font-size: 0.9rem; font-weight: 700; }
+.err ul { margin: 4px 0 0; padding-left: 1.2em; }
 
 /* Karten */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
@@ -133,11 +138,13 @@ textarea { min-height: 72px; resize: vertical; }
 .route { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.95rem; }
 .route b { color: var(--ink); font-weight: 700; }
 .desc { font-size: 0.95rem; overflow-wrap: anywhere; }
+.person { font-size: 0.95rem; }
+.person b { font-weight: 700; }
 .steps { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 0; margin: 0; }
 .steps li { height: 6px; border-radius: 3px; background: var(--line); }
 .steps li.on { background: var(--teal); }
 .steplabel { font-size: 0.8rem; color: var(--muted); }
-.detail { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.95rem; overflow-wrap: anywhere; }
+.detail { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.95rem; overflow-wrap: anywhere; margin: 0; }
 .detail dt { font-size: 0.8rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 .detail dd { margin: 0 0 4px; }
 .pin { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--amber-soft); color: var(--amber-ink); }
@@ -149,9 +156,20 @@ textarea { min-height: 72px; resize: vertical; }
 .confirm { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
 .pinrow { display: flex; gap: 8px; flex-wrap: wrap; }
 .pinrow input { width: 8rem; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+.inline { display: flex; gap: 8px; }
+.inline input { flex: 1; min-width: 0; }
+
+/* Chat */
+.chat { display: grid; gap: 8px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
+.msg { justify-self: start; max-width: 85%; padding: 6px 10px; border-radius: 12px 12px 12px 4px; background: var(--surface); border: 1px solid var(--line); font-size: 0.95rem; overflow-wrap: anywhere; }
+.msg.me { justify-self: end; border-radius: 12px 12px 4px 12px; background: var(--teal-soft); border-color: transparent; }
+.msg small { display: block; font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .earn { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--deep); color: var(--bg); }
-.earn .money small { color: inherit; opacity: 0.8; }
+.earn .money small, .earn .note { color: inherit; opacity: 0.85; }
+.earn .note { max-width: 14rem; }
 .empty { padding: 18px 14px; border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); text-align: center; }
 
 .toast {
@@ -160,9 +178,6 @@ textarea { min-height: 72px; resize: vertical; }
 }
 .toast p { background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; max-width: 520px; font-weight: 700; }
 .foot { font-size: 0.8rem; color: var(--muted); text-align: center; }
-@media (prefers-reduced-motion: no-preference) {
-  .card { transition: border-color 0.2s; }
-}
 </style>
 
 <div class="wrap">
@@ -177,6 +192,18 @@ textarea { min-height: 72px; resize: vertical; }
       <div><h1>FARO</h1><small>Erledigungen aus der Nachbarschaft</small></div>
     </div>
     <span class="proto">Prototyp</span>
+  </div>
+
+  <div class="card" id="profile">
+    <div class="field" id="profile-edit">
+      <label for="p-name">Wie sollen andere dich sehen?</label>
+      <div class="inline">
+        <input type="text" id="p-name" maxlength="24" placeholder="z. B. Ana M." autocomplete="given-name">
+        <button type="button" class="btn primary" id="p-save">Speichern</button>
+      </div>
+      <span class="hint">Vorname und Anfangsbuchstabe reichen.</span>
+    </div>
+    <p class="who" id="profile-show" hidden></p>
   </div>
 
   <div class="roles" role="group" aria-label="Rolle wählen">
@@ -200,40 +227,44 @@ textarea { min-height: 72px; resize: vertical; }
         <span class="hint" id="f-cat-hint"></span>
       </div>
       <div class="field">
-        <span class="legend">Abholung</span>
+        <span class="legend" id="l-from">Abholung</span>
         <div class="row2">
           <input type="text" id="f-from-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Abholung" required>
-          <input type="text" id="f-from-addr" placeholder="Geschäft oder Adresse" aria-label="Geschäft oder Adresse der Abholung" required>
+          <input type="text" id="f-from-addr" aria-labelledby="l-from" required>
         </div>
       </div>
-      <div class="field">
-        <label for="f-code">Abholnummer oder Code <span class="hint">(optional)</span></label>
-        <input type="text" id="f-code" placeholder="z. B. Bestellnummer 4711-2290">
+      <div class="field" id="field-code">
+        <label for="f-code"><span id="l-code">Abholnummer</span> <span class="hint">(optional)</span></label>
+        <input type="text" id="f-code">
         <span class="hint">Sieht der Helfer erst nach der Annahme.</span>
       </div>
       <div class="field">
-        <span class="legend">Bringen zu</span>
+        <span class="legend" id="l-to">Bringen zu</span>
         <div class="row2">
           <input type="text" id="f-to-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Ziel" required>
-          <input type="text" id="f-to-addr" placeholder="Straße, Hausnummer, Name am Klingelschild" aria-label="Zieladresse" required>
+          <input type="text" id="f-to-addr" aria-labelledby="l-to" required>
         </div>
       </div>
       <div class="field">
-        <label for="f-until">Erledigt bis heute</label>
-        <input type="time" id="f-until" value="18:00" required>
+        <span class="legend" id="l-when">Erledigt bis</span>
+        <div class="row2">
+          <select id="f-day" aria-label="Tag"><option value="0">Heute</option><option value="1">Morgen</option></select>
+          <input type="time" id="f-until" value="18:00" aria-label="Uhrzeit" required>
+        </div>
+        <span class="hint">Mindestens 30 Minuten ab jetzt. Danach läuft der Auftrag automatisch ab.</span>
       </div>
-      <div class="field">
+      <div class="field" id="field-size">
         <span class="legend" id="l-size">Größe</span>
         <div class="sizes" role="radiogroup" aria-labelledby="l-size" id="f-sizes"></div>
       </div>
       <div class="field">
-        <label for="f-desc">Beschreibung</label>
-        <textarea id="f-desc" placeholder="z. B. Zwei Pakete, Abholung an der Info-Theke im Erdgeschoss"></textarea>
+        <label for="f-desc">Beschreibung <span class="hint">(optional)</span></label>
+        <textarea id="f-desc" maxlength="300" placeholder="z. B. Abholung an der Info-Theke im Erdgeschoss"></textarea>
       </div>
-      <label class="check"><input type="checkbox" id="f-paid"> Alles ist bereits bezahlt. An der Kasse ist nichts mehr zu zahlen.</label>
+      <label class="check"><input type="checkbox" id="f-paid"> <span id="t-paid">Alles ist bereits bezahlt.</span></label>
       <label class="check"><input type="checkbox" id="f-allowed"> Keine verbotenen Artikel (Medikamente, Alkohol, Tabak, Bargeld, Ausweise, Gefahrgut).</label>
       <div class="price" id="f-price" aria-live="polite"></div>
-      <p class="err" id="f-err" role="alert" hidden></p>
+      <div class="err" id="f-err" role="alert" hidden></div>
       <div class="actions">
         <button type="submit" class="btn primary">Auftrag veröffentlichen</button>
         <button type="button" class="btn ghost" id="btn-cancel-form">Abbrechen</button>
@@ -241,18 +272,35 @@ textarea { min-height: 72px; resize: vertical; }
     </form>
 
     <div id="list-kunde" class="stack"></div>
+    <div id="done-kunde" class="stack"></div>
   </section>
 
   <section id="view-helfer" class="stack" hidden aria-labelledby="h-helfer">
+    <div class="card" id="area">
+      <div id="area-edit" class="field">
+        <span class="legend" id="l-area">Mein Gebiet</span>
+        <div class="row2">
+          <input type="text" id="a-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Deine Postleitzahl">
+          <select id="a-range" aria-label="Umkreis">
+            <option value="exact">Nur diese PLZ</option>
+            <option value="near">Umgebung (gleiche ersten 3 Ziffern)</option>
+            <option value="region" selected>Region (gleiche ersten 2 Ziffern)</option>
+          </select>
+        </div>
+        <button type="button" class="btn primary" id="a-save">Gebiet speichern</button>
+        <span class="hint">Zum Ausprobieren: PLZ 10178 und „Region“ zeigt die Berliner Beispielaufträge.</span>
+      </div>
+      <p class="who" id="area-show" hidden></p>
+    </div>
     <div class="earn" id="earn"></div>
     <h2 id="h-helfer">Meine Einsätze</h2>
     <div id="list-mine" class="stack"></div>
-    <h2>Aufträge in deiner Nähe</h2>
+    <h2 id="h-market">Aufträge in deinem Gebiet</h2>
     <p class="note">Du entscheidest selbst, was du annimmst. Kein Zeitplan, keine Nachteile beim Ablehnen. Genaue Adressen siehst du erst nach der Annahme.</p>
     <div id="list-market" class="stack"></div>
   </section>
 
-  <p class="foot">Prototyp zum Ausprobieren: keine echten Zahlungen, Beispielpreise. Alle Tester sehen dieselben Aufträge.</p>
+  <p class="foot">Prototyp zum Ausprobieren: keine echten Zahlungen, Beispielpreise. Alle Tester sehen dieselben Aufträge. Bitte keine echten Daten eingeben.</p>
 </div>
 
 <div class="toast" aria-live="polite"><p id="toast" hidden></p></div>
@@ -262,12 +310,28 @@ textarea { min-height: 72px; resize: vertical; }
   "use strict";
 
   var CATS = {
-    pickup_click_collect: { de: "Click & Collect abholen", hint: "Bezahlte Bestellung im Geschäft abholen und bringen." },
-    task_parcel_return: { de: "Paket zurückschicken", hint: "Fertig verpacktes, frankiertes Paket zur Paketstelle bringen." },
-    task_parcel_pickup: { de: "Paket abholen", hint: "Paket im Paketshop oder an der Packstation abholen." },
-    task_key_handover: { de: "Schlüssel übergeben", hint: "Schlüssel von A nach B bringen, nur persönliche Übergabe." },
-    task_documents: { de: "Dokumente überbringen", hint: "Verschlossener Umschlag, persönliche Übergabe." },
-    task_repair_service: { de: "Reparatur & Reinigung", hint: "Zur Reparatur oder Reinigung bringen oder dort abholen (bereits bezahlt)." }
+    pickup_click_collect: { de: "Click & Collect abholen", hint: "Bezahlte Bestellung im Geschäft abholen und zu dir bringen.",
+      from: "Geschäft", fromPh: "Name und Adresse des Geschäfts", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
+      code: "Bestell- oder Abholnummer", codePh: "z. B. 4711-2290", sizes: true, proof: "pin",
+      paid: "Die Bestellung ist bezahlt. An der Kasse ist nichts mehr zu zahlen." },
+    task_parcel_return: { de: "Paket zurückschicken", hint: "Fertig verpacktes Paket bei dir abholen und im Paketshop abgeben.",
+      from: "Bei dir abholen", fromPh: "Straße, Hausnummer, Name am Klingelschild", to: "Abgeben bei", toPh: "z. B. DHL-Paketshop, Musterstraße 5",
+      code: null, sizes: true, proof: "receipt",
+      paid: "Das Paket ist verpackt, verschlossen und frankiert (Retourenlabel klebt drauf)." },
+    task_parcel_pickup: { de: "Paket abholen", hint: "Paket im Paketshop, in der Filiale oder an der Packstation abholen.",
+      from: "Abholen bei", fromPh: "z. B. Hermes-Paketshop, Musterstraße 8", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
+      code: "Abholcode oder Sendungsnummer", codePh: "z. B. 3S1234567890", sizes: true, proof: "pin",
+      paid: "Keine Nachnahme. Es ist nichts zu zahlen." },
+    task_key_handover: { de: "Schlüssel übergeben", hint: "Schlüssel persönlich von A nach B bringen.",
+      from: "Schlüssel abholen bei", fromPh: "Adresse und Name", to: "Übergeben an", toPh: "Adresse und Name der Person",
+      code: null, sizes: false, proof: "pin", paid: "Es ist nichts zu zahlen." },
+    task_documents: { de: "Dokumente überbringen", hint: "Verschlossenen Umschlag persönlich übergeben.",
+      from: "Umschlag abholen bei", fromPh: "Adresse und Name", to: "Übergeben an", toPh: "Adresse und Name der Person",
+      code: null, sizes: false, proof: "pin", paid: "Der Umschlag ist verschlossen. Es ist nichts zu zahlen." },
+    task_repair_service: { de: "Reparatur & Reinigung", hint: "Etwas zur Reparatur oder Reinigung bringen oder dort abholen.",
+      from: "Abholen bei", fromPh: "z. B. Schuhmacherei oder deine Adresse", to: "Bringen zu", toPh: "z. B. deine Adresse oder die Werkstatt",
+      code: "Abholschein-Nummer", codePh: "z. B. 318", sizes: true, proof: "pin",
+      paid: "Die Reparatur ist bezahlt oder wird direkt an die Werkstatt bezahlt." }
   };
   var SIZES = {
     S: { de: "Klein", hint: "passt in eine Tasche", reward: 600 },
@@ -281,18 +345,31 @@ textarea { min-height: 72px; resize: vertical; }
     picked_up: { de: "Abgeholt", tone: "active", step: 3 },
     delivered: { de: "Zugestellt", tone: "deliv", step: 4 },
     completed: { de: "Abgeschlossen", tone: "ok", step: 5 },
+    expired: { de: "Abgelaufen", tone: "off", step: 0 },
     cancelled: { de: "Storniert", tone: "off", step: 0 },
     not_feasible: { de: "Nicht durchführbar", tone: "bad", step: 0 }
   };
-  var STEP_TEXT = ["", "Wartet auf einen Helfer", "Helfer ist unterwegs zur Abholung", "Abgeholt, auf dem Weg zu dir", "Zugestellt, bitte bestätigen", "Erledigt"];
+  var STEP_TEXT = ["", "Wartet auf einen Helfer", "Helfer ist unterwegs zur Abholung", "Abgeholt, auf dem Weg", "Zugestellt, bitte bestätigen", "Erledigt"];
   var REASONS = {
     payment_required: "An der Kasse sollte noch gezahlt werden",
     not_ready: "Bestellung war nicht abholbereit",
     prohibited_item: "Verbotener Artikel",
     other: "Anderer Grund"
   };
+  var CHAT_STATES = ["accepted", "picked_up", "delivered"];
+  var FINISHED = ["completed", "expired", "cancelled", "not_feasible"];
+  var QUICK = {
+    helfer: ["Bin unterwegs zur Abholung", "Habe es abgeholt", "Bin gleich da", "Ich verspäte mich etwas"],
+    kunde: ["Danke!", "Bin zu Hause", "Bitte beim Nachbarn klingeln"]
+  };
+  var RANGE_DE = { exact: "nur diese PLZ", near: "Umgebung", region: "Region" };
 
-  var state = { role: "kunde", me: null, errands: [], loaded: false, confirm: null, pinDraft: {}, nfReason: {}, busy: {} };
+  var state = {
+    role: "kunde", me: null, name: "", errands: [], loaded: false,
+    confirm: null, pinDraft: {}, nfReason: {}, busy: {},
+    chatOpen: {}, chatUnsub: {}, msgs: {}, chatDraft: {},
+    area: null, showDone: false, expiring: {}, formOpened: false
+  };
   var store = null;
 
   function $(id) { return document.getElementById(id); }
@@ -316,6 +393,29 @@ textarea { min-height: 72px; resize: vertical; }
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
   }
+  function cat(e) { return CATS[e.category] || CATS.pickup_click_collect; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtDeadline(e) {
+    if (!e.deadline) return "bis " + esc(e.until || "–") + " Uhr";
+    var d = new Date(e.deadline), now = new Date();
+    var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var day = Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() - t0) / 86400000);
+    var when = day === 0 ? "heute" : day === 1 ? "morgen" : day === -1 ? "gestern" : pad(d.getDate()) + "." + pad(d.getMonth() + 1) + ".";
+    return when + " bis " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + " Uhr";
+  }
+  function isExpired(e) { return e.status === "published" && !e.example && e.deadline && e.deadline < Date.now(); }
+  function statusOf(e) { return isExpired(e) ? "expired" : e.status; }
+  function inArea(plz) {
+    if (!state.area || !plz) return false;
+    var n = state.area.range === "exact" ? 5 : state.area.range === "near" ? 3 : 2;
+    return String(plz).slice(0, n) === state.area.plz.slice(0, n);
+  }
+  function needName() {
+    if (state.name) return false;
+    toast("Bitte zuerst oben deinen Namen eingeben.");
+    $("p-name").focus();
+    return true;
+  }
 
   /* ---------- Speicher: geteilte Datenbank oder lokal ---------- */
   function makeDbStore(db) {
@@ -329,25 +429,34 @@ textarea { min-height: 72px; resize: vertical; }
       },
       add: function (d) { return col.add(d); },
       update: function (id, patch) { return db.doc("errands/" + id).update(patch); },
-      claim: function (id, me) {
+      claim: function (id, me, name) {
         var ref = db.doc("errands/" + id);
         return ref.acquire({ holder: me, ttlMs: 5000 }).then(function (l) {
           if (!l.acquired) return "busy";
           return ref.get().then(function (s) {
             if (!s.exists || s.data().status !== "published") return "taken";
             var now = Date.now();
-            return ref.update({ status: "accepted", helferId: me, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
+            return ref.update({ status: "accepted", helferId: me, helferName: name, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
           });
         });
-      }
+      },
+      subscribeMessages: function (id, cb) {
+        return db.doc("errands/" + id).collection("messages").orderBy("at", "asc").limit(100).onSnapshot(function (snap) {
+          cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
+        }, function () { cb(null); });
+      },
+      sendMessage: function (id, m) { return db.doc("errands/" + id).collection("messages").add(m); },
+      saveHelferArea: function (me, data) { return db.doc("helfers/" + me).set(data); }
     };
   }
   function makeLocalStore() {
-    var items = [];
+    var items = [], msgs = {};
     try { items = JSON.parse(ls("faro-demo-errands") || "[]"); } catch (e) { items = []; }
-    var subs = [];
+    try { msgs = JSON.parse(ls("faro-demo-msgs") || "{}"); } catch (e) { msgs = {}; }
+    var subs = [], msgSubs = {};
     function sorted() { return items.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }); }
     function emit() { ls("faro-demo-errands", JSON.stringify(items)); subs.forEach(function (f) { f(sorted()); }); }
+    function emitMsgs(id) { ls("faro-demo-msgs", JSON.stringify(msgs)); (msgSubs[id] || []).forEach(function (f) { f((msgs[id] || []).slice()); }); }
     var api = {
       shared: false,
       subscribe: function (cb) { subs.push(cb); cb(sorted()); return function () {}; },
@@ -357,14 +466,56 @@ textarea { min-height: 72px; resize: vertical; }
         emit();
         return Promise.resolve();
       },
-      claim: function (id, me) {
+      claim: function (id, me, name) {
         var x = items.filter(function (i) { return i.id === id; })[0];
         if (!x || x.status !== "published") return Promise.resolve("taken");
         var now = Date.now();
-        return api.update(id, { status: "accepted", helferId: me, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
-      }
+        return api.update(id, { status: "accepted", helferId: me, helferName: name, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
+      },
+      subscribeMessages: function (id, cb) {
+        (msgSubs[id] = msgSubs[id] || []).push(cb);
+        cb((msgs[id] || []).slice());
+        return function () { msgSubs[id] = (msgSubs[id] || []).filter(function (f) { return f !== cb; }); };
+      },
+      sendMessage: function (id, m) { (msgs[id] = msgs[id] || []).push(Object.assign({ id: "m" + Date.now() }, m)); emitMsgs(id); return Promise.resolve(); },
+      saveHelferArea: function () { return Promise.resolve(); }
     };
     return api;
+  }
+
+  /* ---------- Profil und Gebiet ---------- */
+  function renderProfile() {
+    var has = !!state.name;
+    $("profile-edit").hidden = has;
+    $("profile-show").hidden = !has;
+    if (has) $("profile-show").innerHTML = "<span>Du bist <b>" + esc(state.name) + "</b></span><button type=\"button\" class=\"linkbtn\" data-act=\"edit-name\">Ändern</button>";
+  }
+  function saveName() {
+    var v = $("p-name").value.trim().slice(0, 24);
+    if (v.length < 2) { toast("Bitte mindestens zwei Buchstaben eingeben."); $("p-name").focus(); return; }
+    state.name = v;
+    ls("faro-demo-name", v);
+    renderProfile();
+    toast("Gespeichert. Andere sehen dich als " + v + ".");
+  }
+  function renderArea() {
+    var has = !!state.area;
+    $("area-edit").hidden = has;
+    $("area-show").hidden = !has;
+    if (has) {
+      var n = state.area.range === "exact" ? 5 : state.area.range === "near" ? 3 : 2;
+      var shown = state.area.plz.slice(0, n) + "xxxxx".slice(0, 5 - n);
+      $("area-show").innerHTML = "<span>Mein Gebiet: <b>" + esc(shown) + "</b> (" + esc(RANGE_DE[state.area.range]) + ")</span><button type=\"button\" class=\"linkbtn\" data-act=\"edit-area\">Ändern</button>";
+    }
+  }
+  function saveArea() {
+    var plz = $("a-plz").value.trim();
+    if (!/^\d{5}$/.test(plz)) { toast("Bitte eine fünfstellige PLZ eingeben."); $("a-plz").focus(); return; }
+    state.area = { plz: plz, range: $("a-range").value };
+    ls("faro-demo-area", JSON.stringify(state.area));
+    if (store && state.me) store.saveHelferArea(state.me, { plz: plz, range: state.area.range, name: state.name || "", updatedAt: Date.now() }).catch(function () {});
+    renderArea();
+    render();
   }
 
   /* ---------- Formular ---------- */
@@ -384,17 +535,26 @@ textarea { min-height: 72px; resize: vertical; }
     sel.addEventListener("change", updateFormInfo);
     sizes.addEventListener("change", updateFormInfo);
     updateFormInfo();
-
     $("btn-new").addEventListener("click", function () { setFormOpen($("form-new").hidden); });
     $("btn-cancel-form").addEventListener("click", function () { setFormOpen(false); });
     $("form-new").addEventListener("submit", onSubmit);
   }
   function currentSize() {
+    if (!CATS[$("f-cat").value].sizes) return "S";
     var c = document.querySelector('input[name="size"]:checked');
     return c ? c.value : "M";
   }
   function updateFormInfo() {
-    $("f-cat-hint").textContent = CATS[$("f-cat").value].hint;
+    var c = CATS[$("f-cat").value];
+    $("f-cat-hint").textContent = c.hint;
+    $("l-from").textContent = c.from;
+    $("l-to").textContent = c.to;
+    $("f-from-addr").placeholder = c.fromPh;
+    $("f-to-addr").placeholder = c.toPh;
+    $("field-code").hidden = !c.code;
+    if (c.code) { $("l-code").textContent = c.code; $("f-code").placeholder = c.codePh; }
+    $("field-size").hidden = !c.sizes;
+    $("t-paid").textContent = c.paid;
     var r = SIZES[currentSize()].reward;
     $("f-price").innerHTML =
       "<div><span>Vergütung für den Helfer</span><span>" + euro(r) + "</span></div>" +
@@ -407,19 +567,52 @@ textarea { min-height: 72px; resize: vertical; }
     $("btn-new").hidden = open;
     if (open && !noFocus) $("f-cat").focus();
   }
+  function prefill(e) {
+    $("f-cat").value = e.category;
+    $("f-from-plz").value = e.pickupArea || "";
+    $("f-from-addr").value = e.pickupAddress || "";
+    $("f-code").value = e.pickupCode || "";
+    $("f-to-plz").value = e.dropArea || "";
+    $("f-to-addr").value = e.dropAddress || "";
+    $("f-desc").value = e.description || "";
+    var s = $("f-size-" + (e.size || "M")); if (s) s.checked = true;
+    $("f-day").value = "0";
+    $("f-paid").checked = false; $("f-allowed").checked = false;
+    updateFormInfo();
+    setFormOpen(true);
+    $("form-new").scrollIntoView({ block: "start" });
+  }
+  function computeDeadline() {
+    var t = $("f-until").value;
+    if (!/^\d{2}:\d{2}$/.test(t)) return null;
+    var d = new Date();
+    d.setDate(d.getDate() + Number($("f-day").value));
+    d.setHours(Number(t.slice(0, 2)), Number(t.slice(3, 5)), 0, 0);
+    return d.getTime();
+  }
   function onSubmit(ev) {
     ev.preventDefault();
     var err = $("f-err");
+    var c = CATS[$("f-cat").value];
     var plzA = $("f-from-plz").value.trim(), plzB = $("f-to-plz").value.trim();
     var addrA = $("f-from-addr").value.trim(), addrB = $("f-to-addr").value.trim();
-    var msg = "";
-    if (!/^\d{5}$/.test(plzA) || !/^\d{5}$/.test(plzB)) msg = "Bitte eine gültige fünfstellige PLZ für Abholung und Ziel eingeben.";
-    else if (!addrA || !addrB) msg = "Bitte Abholort und Zieladresse angeben.";
-    else if (!$("f-until").value) msg = "Bitte angeben, bis wann der Auftrag erledigt sein soll.";
-    else if (!$("f-paid").checked) msg = "Im MVP nur bereits bezahlte Aufträge. Bitte bestätigen, dass nichts mehr zu zahlen ist.";
-    else if (!$("f-allowed").checked) msg = "Bitte bestätigen, dass keine verbotenen Artikel dabei sind.";
-    if (msg) { err.textContent = msg; err.hidden = false; return; }
+    var deadline = computeDeadline();
+    var problems = [];
+    if (!/^\d{5}$/.test(plzA)) problems.push("PLZ bei „" + c.from + "“ fehlt oder hat nicht fünf Ziffern.");
+    if (!addrA) problems.push("Adresse bei „" + c.from + "“ fehlt.");
+    if (!/^\d{5}$/.test(plzB)) problems.push("PLZ bei „" + c.to + "“ fehlt oder hat nicht fünf Ziffern.");
+    if (!addrB) problems.push("Adresse bei „" + c.to + "“ fehlt.");
+    if (!deadline) problems.push("Bitte eine Uhrzeit angeben.");
+    else if (deadline < Date.now() + 30 * 60000) problems.push("Die Zeit ist zu knapp oder schon vorbei. Bitte mindestens 30 Minuten ab jetzt wählen.");
+    if (!$("f-paid").checked) problems.push("Bitte bestätigen: " + c.paid);
+    if (!$("f-allowed").checked) problems.push("Bitte bestätigen, dass keine verbotenen Artikel dabei sind.");
+    if (problems.length) {
+      err.innerHTML = "Bitte noch korrigieren:<ul>" + problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>";
+      err.hidden = false;
+      return;
+    }
     err.hidden = true;
+    if (needName()) return;
     if (!store || !state.me) { toast("Noch nicht verbunden. Bitte kurz warten."); return; }
     var size = currentSize();
     var now = Date.now();
@@ -428,16 +621,18 @@ textarea { min-height: 72px; resize: vertical; }
       size: size,
       pickupArea: plzA,
       pickupAddress: addrA,
-      pickupCode: $("f-code").value.trim(),
+      pickupCode: c.code ? $("f-code").value.trim() : "",
       dropArea: plzB,
       dropAddress: addrB,
-      until: $("f-until").value,
-      description: $("f-desc").value.trim(),
+      deadline: deadline,
+      description: $("f-desc").value.trim().slice(0, 300),
       reward: SIZES[size].reward,
       fee: FEE,
       status: "published",
       clientId: state.me,
+      clientName: state.name,
       helferId: null,
+      helferName: null,
       pin: String(Math.floor(1000 + Math.random() * 9000)),
       example: false,
       createdAt: now,
@@ -449,7 +644,7 @@ textarea { min-height: 72px; resize: vertical; }
       $("f-size-M").checked = true;
       updateFormInfo();
       setFormOpen(false);
-      toast("Auftrag veröffentlicht. Helfer in der Nähe sehen ihn jetzt.");
+      toast("Auftrag veröffentlicht. Helfer im Gebiet sehen ihn jetzt.");
     }).catch(function (e) { toast(errorText(e)); });
   }
 
@@ -463,40 +658,64 @@ textarea { min-height: 72px; resize: vertical; }
     return '<ol class="steps" aria-label="Fortschritt: Schritt ' + n + " von 5\">" + li + '</ol><p class="steplabel">' + esc(STEP_TEXT[n]) + "</p>";
   }
   function route(e) {
-    return '<p class="route"><b>' + esc(e.pickupArea) + "</b><span aria-label=\"nach\">→</span><b>" + esc(e.dropArea) + "</b><span>· bis " + esc(e.until) + " Uhr</span><span>· " + esc((SIZES[e.size] || SIZES.M).de) + "</span></p>";
+    var size = cat(e).sizes ? "<span>· " + esc((SIZES[e.size] || SIZES.M).de) + "</span>" : "";
+    return '<p class="route"><b>' + esc(e.pickupArea) + "</b><span aria-label=\"nach\">→</span><b>" + esc(e.dropArea) + "</b><span>· " + fmtDeadline(e) + "</span>" + size + "</p>";
   }
-  function exampleTag(e) { return e.example ? '<span class="tag">Beispiel</span>' : ""; }
+  function head(e, extraTag) {
+    return "<header><div>" + (e.example ? '<span class="tag">Beispiel</span> ' : "") + (extraTag || "") + '<div class="cat">' + esc(cat(e).de) + "</div></div>" + chip(statusOf(e)) + "</header>";
+  }
   function confirmBox(id, kind, text, okLabel, okClass) {
     return '<div class="confirm" role="group"><p>' + esc(text) + '</p><div class="actions"><button type="button" class="btn ' + okClass + '" data-act="' + kind + '-yes" data-id="' + esc(id) + '">' + esc(okLabel) + '</button><button type="button" class="btn ghost" data-act="confirm-no">Zurück</button></div></div>';
   }
   function isConfirm(id, kind) { return state.confirm && state.confirm.id === id && state.confirm.kind === kind; }
 
+  function chatBlock(e, role) {
+    if (CHAT_STATES.indexOf(e.status) < 0) return "";
+    var other = role === "kunde" ? (e.helferName || "Helfer") : (e.clientName || "Kunde");
+    var open = !!state.chatOpen[role + ":" + e.id];
+    var btn = '<button type="button" class="btn ghost small" data-act="chat" data-id="' + esc(e.id) + '" aria-expanded="' + open + '">' + (open ? "Chat schließen" : "Nachricht an " + esc(other)) + "</button>";
+    if (!open) return '<div class="actions">' + btn + "</div>";
+    var list = state.msgs[e.id];
+    var items = list == null ? '<li class="note">Chat nicht verfügbar.</li>'
+      : list.length ? list.map(function (m) {
+          return '<li class="msg' + (m.from === state.me ? " me" : "") + '"><small>' + esc(m.from === state.me ? "Du" : (m.name || "")) + "</small>" + esc(m.text) + "</li>";
+        }).join("") : '<li class="note">Noch keine Nachrichten. Schreib kurz, wenn etwas unklar ist.</li>';
+    var quick = QUICK[role].map(function (q) { return '<button type="button" class="btn small" data-act="quick" data-id="' + esc(e.id) + '" data-text="' + esc(q) + '">' + esc(q) + "</button>"; }).join("");
+    return '<div class="chat"><div class="actions">' + btn + '</div><ul class="msgs" id="msgs-' + role + "-" + esc(e.id) + '">' + items + '</ul><div class="quick">' + quick +
+      '</div><div class="inline"><input type="text" id="chat-' + role + "-" + esc(e.id) + '" data-chat="' + esc(e.id) + '" maxlength="300" placeholder="Nachricht an ' + esc(other) + '" aria-label="Nachricht an ' + esc(other) + '" value="' + esc(state.chatDraft[e.id] || "") + '"><button type="button" class="btn primary" data-act="send" data-id="' + esc(e.id) + '">Senden</button></div></div>';
+  }
+
   function kundeCard(e) {
+    var st = statusOf(e);
     var acts = "";
-    if (e.status === "published" || e.status === "accepted") {
+    if (st === "published" || st === "accepted") {
       acts = isConfirm(e.id, "cancel")
-        ? confirmBox(e.id, "cancel", e.status === "accepted" ? "Ein Helfer hat schon angenommen. Trotzdem stornieren? (Im Prototyp ohne Kosten.)" : "Auftrag wirklich stornieren?", "Stornieren", "danger")
+        ? confirmBox(e.id, "cancel", st === "accepted" ? "Ein Helfer hat schon angenommen. Trotzdem stornieren? (Im Prototyp ohne Kosten.)" : "Auftrag wirklich stornieren?", "Stornieren", "danger")
         : '<button type="button" class="btn ghost danger" data-act="cancel" data-id="' + esc(e.id) + '">Stornieren</button>';
     }
-    if (e.status === "delivered") {
-      acts = '<button type="button" class="btn primary" data-act="confirm-receipt" data-id="' + esc(e.id) + '">Erhalt bestätigen</button>';
-    }
-    var pin = (e.status === "accepted" || e.status === "picked_up")
-      ? '<div class="pin"><span>Dein Übergabe-PIN</span><strong>' + esc(e.pin) + "</strong><small>Erst bei der Übergabe weitergeben.</small></div>"
+    if (st === "delivered") acts = '<button type="button" class="btn primary" data-act="confirm-receipt" data-id="' + esc(e.id) + '">Erhalt bestätigen</button>';
+    if (st === "expired" || st === "not_feasible" || st === "cancelled") acts = '<button type="button" class="btn" data-act="redo" data-id="' + esc(e.id) + '">Neu aufgeben</button>';
+    var helfer = e.helferName && ["accepted", "picked_up", "delivered", "completed"].indexOf(st) >= 0
+      ? '<p class="person">Helfer: <b>' + esc(e.helferName) + "</b></p>" : "";
+    var pin = (st === "accepted" || st === "picked_up") && cat(e).proof === "pin"
+      ? '<div class="pin"><span>Übergabe-PIN</span><strong>' + esc(e.pin) + "</strong><small>Erst bei der Übergabe weitergeben, auch an die Person, die empfängt.</small></div>"
       : "";
-    var nf = e.status === "not_feasible" ? '<p class="desc">Grund: ' + esc(REASONS[e.notFeasibleReason] || "–") + "</p>" : "";
-    return '<article class="card"><header><div>' + exampleTag(e) + '<div class="cat">' + esc(CATS[e.category] ? CATS[e.category].de : e.category) + "</div></div>" + chip(e.status) + "</header>" +
-      route(e) + steps(e.status) + pin + nf +
+    var nf = st === "not_feasible" ? '<p class="desc">Grund: ' + esc(REASONS[e.notFeasibleReason] || "–") + "</p>" : "";
+    var exp = st === "expired" ? '<p class="desc">Niemand hat den Auftrag rechtzeitig angenommen.</p>' : "";
+    return '<article class="card">' + head(e) + route(e) + steps(st) + helfer + pin + nf + exp +
       (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      chatBlock(e, "kunde") +
       '<footer><p class="money">' + euro((e.reward || 0) + (e.fee || 0)) + "<small>Gesamt, Beispielpreis</small></p>" + (acts ? '<div class="actions">' + acts + "</div>" : "") + "</footer></article>";
   }
 
+  function helferLabel(l) { return l === "Zu dir" ? "Bringen zu" : l === "Bei dir abholen" ? "Abholen beim Kunden" : l; }
   function helferMineCard(e) {
+    var c = cat(e);
     var detail = "";
     if (e.status === "accepted" || e.status === "picked_up") {
-      detail = '<dl class="detail"><dt>Abholen bei</dt><dd>' + esc(e.pickupArea) + " · " + esc(e.pickupAddress) + "</dd>" +
-        (e.pickupCode ? "<dt>Abholnummer</dt><dd>" + esc(e.pickupCode) + "</dd>" : "") +
-        "<dt>Bringen zu</dt><dd>" + esc(e.dropArea) + " · " + esc(e.dropAddress) + "</dd></dl>";
+      detail = '<dl class="detail"><dt>' + esc(helferLabel(c.from)) + "</dt><dd>" + esc(e.pickupArea) + " · " + esc(e.pickupAddress) + "</dd>" +
+        (e.pickupCode ? "<dt>" + esc(c.code || "Code") + "</dt><dd>" + esc(e.pickupCode) + "</dd>" : "") +
+        "<dt>" + esc(helferLabel(c.to)) + "</dt><dd>" + esc(e.dropArea) + " · " + esc(e.dropAddress) + "</dd></dl>";
     }
     var acts = "";
     if (e.status === "accepted") {
@@ -511,24 +730,26 @@ textarea { min-height: 72px; resize: vertical; }
           '<button type="button" class="btn ghost" data-act="release" data-id="' + esc(e.id) + '">Freigeben</button>';
       }
     } else if (e.status === "picked_up") {
-      if (e.category === "task_parcel_return") {
+      if (c.proof === "receipt") {
         acts = '<button type="button" class="btn primary" data-act="deliver-receipt" data-id="' + esc(e.id) + '">Abgegeben, Beleg erhalten</button>';
       } else {
         var v = state.pinDraft[e.id] || "";
-        acts = '<div class="confirm"><label for="pin-' + esc(e.id) + '"><b>Übergabe-PIN des Empfängers</b></label><div class="pinrow"><input type="text" id="pin-' + esc(e.id) + '" data-pin="' + esc(e.id) + '" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(v) + '"><button type="button" class="btn primary" data-act="deliver" data-id="' + esc(e.id) + '">Zustellen</button></div></div>';
+        var hint = e.example ? '<p class="note">Beispiel-PIN: <b>' + esc(e.pin) + "</b>. Im echten Leben sagt ihn dir die Person beim Empfang.</p>" : "";
+        acts = '<div class="confirm"><label for="pin-' + esc(e.id) + '"><b>Übergabe-PIN der Person, die empfängt</b></label>' + hint + '<div class="pinrow"><input type="text" id="pin-' + esc(e.id) + '" data-pin="' + esc(e.id) + '" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(v) + '"><button type="button" class="btn primary" data-act="deliver" data-id="' + esc(e.id) + '">Zustellen</button></div></div>';
       }
     } else if (e.status === "delivered") {
-      acts = '<p class="note">Wartet auf die Bestätigung des Kunden.</p>';
+      acts = '<p class="note">Wartet auf die Bestätigung von ' + esc(e.clientName || "Kunde") + ".</p>";
     }
-    return '<article class="card"><header><div>' + exampleTag(e) + '<div class="cat">' + esc(CATS[e.category] ? CATS[e.category].de : e.category) + "</div></div>" + chip(e.status) + "</header>" +
-      route(e) + detail + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+    var client = e.clientName ? '<p class="person">Kunde: <b>' + esc(e.clientName) + "</b></p>" : "";
+    return '<article class="card">' + head(e) + route(e) + client + detail + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      chatBlock(e, "helfer") +
       '<footer><p class="money">' + euro(e.reward || 0) + "<small>deine Vergütung</small></p></footer>" +
       (acts ? '<div class="actions">' + acts + "</div>" : "") + "</article>";
   }
 
   function marketCard(e) {
     var own = e.clientId === state.me;
-    return '<article class="card"><header><div>' + exampleTag(e) + (own ? '<span class="tag">Dein eigener Auftrag</span>' : "") + '<div class="cat">' + esc(CATS[e.category] ? CATS[e.category].de : e.category) + "</div></div></header>" +
+    return '<article class="card">' + head(e, own ? '<span class="tag">Dein eigener Auftrag</span>' : "") +
       route(e) + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
       '<footer><p class="money">' + euro(e.reward || 0) + '<small>Vergütung</small></p><button type="button" class="btn accent" data-act="accept" data-id="' + esc(e.id) + '"' + (state.busy[e.id] ? " disabled" : "") + ">Annehmen</button></footer></article>";
   }
@@ -541,27 +762,38 @@ textarea { min-height: 72px; resize: vertical; }
     $("view-helfer").hidden = kunde;
 
     var active = document.activeElement && document.activeElement.id;
+    var scrolls = {};
+    document.querySelectorAll(".msgs").forEach(function (m) { scrolls[m.id] = m.scrollTop + m.clientHeight >= m.scrollHeight - 4 ? "bottom" : m.scrollTop; });
     var me = state.me;
     var loading = '<p class="empty">Aufträge werden geladen …</p>';
 
-    var mineK = state.errands.filter(function (e) { return e.clientId === me && me; });
-    $("list-kunde").innerHTML = !state.loaded ? loading : (mineK.length ? mineK.map(kundeCard).join("") :
-      '<p class="empty">Noch keine Aufträge. Tippe auf „Neuer Auftrag“ und lass z. B. eine Click-&-Collect-Bestellung abholen.</p>');
+    var mineK = state.errands.filter(function (e) { return me && e.clientId === me; });
+    var openK = mineK.filter(function (e) { return FINISHED.indexOf(statusOf(e)) < 0; });
+    var doneK = mineK.filter(function (e) { return FINISHED.indexOf(statusOf(e)) >= 0; });
+    $("list-kunde").innerHTML = !state.loaded ? loading : (openK.length ? openK.map(kundeCard).join("") :
+      '<p class="empty">Keine laufenden Aufträge. Tippe auf „Neuer Auftrag“ und lass z. B. eine Click-&-Collect-Bestellung abholen.</p>');
+    $("done-kunde").innerHTML = doneK.length
+      ? '<div class="actions"><button type="button" class="btn ghost" data-act="toggle-done" aria-expanded="' + state.showDone + '">' + (state.showDone ? "Beendete Aufträge ausblenden" : "Beendete Aufträge anzeigen (" + doneK.length + ")") + "</button></div>" + (state.showDone ? doneK.map(kundeCard).join("") : "")
+      : "";
 
-    var mineH = state.errands.filter(function (e) { return e.helferId === me && me && ["accepted", "picked_up", "delivered", "completed"].indexOf(e.status) >= 0; });
-    var open = mineH.filter(function (e) { return e.status !== "completed"; });
-    $("list-mine").innerHTML = !state.loaded ? loading : (open.length ? open.map(helferMineCard).join("") :
+    var mineH = state.errands.filter(function (e) { return me && e.helferId === me && ["accepted", "picked_up", "delivered", "completed"].indexOf(e.status) >= 0; });
+    var openH = mineH.filter(function (e) { return e.status !== "completed"; });
+    $("list-mine").innerHTML = !state.loaded ? loading : (openH.length ? openH.map(helferMineCard).join("") :
       '<p class="empty">Du hast gerade keinen Einsatz. Nimm unten einen Auftrag an, wenn du Zeit hast.</p>');
 
     var done = mineH.filter(function (e) { return e.status === "completed"; });
     var sum = done.reduce(function (a, e) { return a + (e.reward || 0); }, 0);
-    $("earn").innerHTML = '<p class="money">' + euro(sum) + "<small>verdient im Prototyp · " + done.length + (done.length === 1 ? " Auftrag" : " Aufträge") + '</small></p><p class="note" style="color:inherit;opacity:.85;max-width:14rem">Keine echte Auszahlung. Für echtes Geld brauchst du später ein Kleingewerbe.</p>';
+    $("earn").innerHTML = '<p class="money">' + euro(sum) + "<small>verdient im Prototyp · " + done.length + (done.length === 1 ? " Auftrag" : " Aufträge") + '</small></p><p class="note">Keine echte Auszahlung. Für echtes Geld brauchst du später ein Kleingewerbe.</p>';
 
-    var market = state.errands.filter(function (e) { return e.status === "published"; });
-    $("list-market").innerHTML = !state.loaded ? loading : (market.length ? market.map(marketCard).join("") :
-      '<p class="empty">Gerade keine offenen Aufträge in deiner Nähe. Schau später wieder vorbei.</p>');
+    var market = state.errands.filter(function (e) { return statusOf(e) === "published" && inArea(e.pickupArea); });
+    $("list-market").innerHTML = !state.loaded ? loading
+      : !state.area ? '<p class="empty">Speichere oben dein Gebiet, dann siehst du die Aufträge in deiner Nähe.</p>'
+      : market.length ? market.map(marketCard).join("")
+      : '<p class="empty">Gerade keine offenen Aufträge in deinem Gebiet. Schau später wieder vorbei oder vergrößere den Umkreis.</p>';
 
     if (active) { var el = $(active); if (el) { el.focus(); if (el.setSelectionRange && el.value) { try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } } }
+    Object.keys(scrolls).forEach(function (k) { var m = $(k); if (m) m.scrollTop = scrolls[k] === "bottom" ? m.scrollHeight : scrolls[k]; });
+    document.querySelectorAll(".msgs").forEach(function (m) { if (!(m.id in scrolls)) m.scrollTop = m.scrollHeight; });
   }
 
   function errorText(e) {
@@ -576,12 +808,47 @@ textarea { min-height: 72px; resize: vertical; }
     state.confirm = null;
     return store.update(id, p).then(function () { if (okMsg) toast(okMsg); }).catch(function (e) { toast(errorText(e)); render(); });
   }
+  function checkExpiry() {
+    if (!store) return;
+    state.errands.forEach(function (e) {
+      if (e.clientId === state.me && isExpired(e) && !state.expiring[e.id]) {
+        state.expiring[e.id] = true;
+        store.update(e.id, { status: "expired", updatedAt: Date.now() }).catch(function () { delete state.expiring[e.id]; });
+      }
+    });
+  }
+  function toggleChat(id) {
+    var key = state.role + ":" + id;
+    if (state.chatOpen[key]) delete state.chatOpen[key];
+    else state.chatOpen[key] = true;
+    var anyOpen = state.chatOpen["kunde:" + id] || state.chatOpen["helfer:" + id];
+    if (anyOpen && !state.chatUnsub[id]) {
+      state.chatUnsub[id] = store.subscribeMessages(id, function (list) { state.msgs[id] = list; render(); });
+    } else if (!anyOpen && state.chatUnsub[id]) {
+      state.chatUnsub[id](); delete state.chatUnsub[id];
+    }
+    render();
+  }
+  function send(id, text) {
+    text = (text || "").trim().slice(0, 300);
+    if (!text) return;
+    if (needName()) return;
+    var e = find(id);
+    if (!e || CHAT_STATES.indexOf(e.status) < 0) { toast("Der Chat ist für diesen Auftrag geschlossen."); return; }
+    var role = e.helferId === state.me && state.role === "helfer" ? "helfer" : "kunde";
+    store.sendMessage(id, { from: state.me, role: role, name: state.name, text: text, at: Date.now() })
+      .then(function () { state.chatDraft[id] = ""; render(); })
+      .catch(function (err) { toast(errorText(err)); });
+  }
 
   /* ---------- Aktionen ---------- */
   document.addEventListener("click", function (ev) {
     var b = ev.target.closest("button[data-act]");
     if (!b) return;
     var act = b.getAttribute("data-act"), id = b.getAttribute("data-id");
+    if (act === "edit-name") { $("p-name").value = state.name; state.name = ""; renderProfile(); $("p-name").focus(); return; }
+    if (act === "edit-area") { $("a-plz").value = state.area.plz; $("a-range").value = state.area.range; state.area = null; renderArea(); render(); $("a-plz").focus(); return; }
+    if (act === "toggle-done") { state.showDone = !state.showDone; render(); return; }
     var e = id ? find(id) : null;
     if (id && !e) return;
     switch (act) {
@@ -594,7 +861,10 @@ textarea { min-height: 72px; resize: vertical; }
         if (e.clientId === state.me && (e.status === "published" || e.status === "accepted")) patch(id, { status: "cancelled" }, "Auftrag storniert.");
         break;
       case "release-yes":
-        if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "published", helferId: null }, "Freigegeben. Der Auftrag ist wieder in der Liste.");
+        if (e.helferId === state.me && e.status === "accepted") {
+          var back = !e.deadline || e.example || e.deadline > Date.now() ? "published" : "expired";
+          patch(id, { status: back, helferId: null, helferName: null }, back === "published" ? "Freigegeben. Der Auftrag ist wieder in der Liste." : "Freigegeben. Die Zeit war schon abgelaufen.");
+        }
         break;
       case "nf-yes":
         if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "not_feasible", notFeasibleReason: state.nfReason[id] || "other" }, "Gemeldet. Danke, dass du nichts ausgelegt hast.");
@@ -605,21 +875,32 @@ textarea { min-height: 72px; resize: vertical; }
       case "deliver":
         if (e.helferId === state.me && e.status === "picked_up") {
           var v = (state.pinDraft[id] || "").trim();
-          if (v !== e.pin) { toast("Der PIN stimmt nicht. Bitte beim Empfänger nachfragen."); break; }
+          if (v !== e.pin) { toast("Der PIN stimmt nicht. Bitte bei der Person nachfragen, die empfängt."); break; }
           delete state.pinDraft[id];
-          patch(id, { status: "delivered", deliveredAt: Date.now() }, "Zugestellt. Danke!");
+          if (e.example) patch(id, { status: "completed", deliveredAt: Date.now(), completedAt: Date.now() }, "Zugestellt. Beispiel automatisch bestätigt.");
+          else patch(id, { status: "delivered", deliveredAt: Date.now() }, "Zugestellt. Danke!");
         }
         break;
       case "deliver-receipt":
-        if (e.helferId === state.me && e.status === "picked_up") patch(id, { status: "delivered", deliveredAt: Date.now() }, "Abgabe gemeldet. Danke!");
+        if (e.helferId === state.me && e.status === "picked_up") {
+          if (e.example) patch(id, { status: "completed", deliveredAt: Date.now(), completedAt: Date.now() }, "Abgabe gemeldet. Beispiel automatisch bestätigt.");
+          else patch(id, { status: "delivered", deliveredAt: Date.now() }, "Abgabe gemeldet. Danke!");
+        }
         break;
       case "confirm-receipt":
         if (e.clientId === state.me && e.status === "delivered") patch(id, { status: "completed", completedAt: Date.now() }, "Bestätigt. Der Auftrag ist erledigt.");
         break;
+      case "redo":
+        if (e.clientId === state.me) prefill(e);
+        break;
+      case "chat": toggleChat(id); break;
+      case "quick": send(id, b.getAttribute("data-text")); break;
+      case "send": send(id, state.chatDraft[id]); break;
       case "accept":
-        if (e.status !== "published" || state.busy[id]) break;
+        if (statusOf(e) !== "published" || state.busy[id]) break;
+        if (needName()) break;
         state.busy[id] = true; render();
-        store.claim(id, state.me).then(function (r) {
+        store.claim(id, state.me, state.name).then(function (r) {
           if (r === "ok") toast("Angenommen. Die genaue Adresse steht jetzt unter „Meine Einsätze“.");
           else if (r === "busy") toast("Jemand nimmt diesen Auftrag gerade an. Bitte kurz warten.");
           else toast("Schon vergeben. Schau dir die anderen Aufträge an.");
@@ -629,8 +910,17 @@ textarea { min-height: 72px; resize: vertical; }
   });
   document.addEventListener("input", function (ev) {
     var t = ev.target;
-    if (t.getAttribute && t.getAttribute("data-pin")) { t.value = t.value.replace(/\D/g, "").slice(0, 4); state.pinDraft[t.getAttribute("data-pin")] = t.value; }
-    if (t.id === "f-from-plz" || t.id === "f-to-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
+    if (!t.getAttribute) return;
+    if (t.getAttribute("data-pin")) { t.value = t.value.replace(/\D/g, "").slice(0, 4); state.pinDraft[t.getAttribute("data-pin")] = t.value; }
+    if (t.getAttribute("data-chat")) state.chatDraft[t.getAttribute("data-chat")] = t.value;
+    if (t.id === "f-from-plz" || t.id === "f-to-plz" || t.id === "a-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
+  });
+  document.addEventListener("keydown", function (ev) {
+    var t = ev.target;
+    if (ev.key !== "Enter" || !t.getAttribute) return;
+    if (t.getAttribute("data-chat")) { ev.preventDefault(); send(t.getAttribute("data-chat"), t.value); }
+    if (t.id === "p-name") { ev.preventDefault(); saveName(); }
+    if (t.id === "a-plz") { ev.preventDefault(); saveArea(); }
   });
   document.addEventListener("change", function (ev) {
     var t = ev.target;
@@ -639,12 +929,19 @@ textarea { min-height: 72px; resize: vertical; }
   function setRole(r) { state.role = r; state.confirm = null; ls("faro-demo-role", r); render(); }
   $("role-kunde").addEventListener("click", function () { setRole("kunde"); });
   $("role-helfer").addEventListener("click", function () { setRole("helfer"); });
+  $("p-save").addEventListener("click", saveName);
+  $("a-save").addEventListener("click", saveArea);
 
   /* ---------- Start ---------- */
   var savedRole = ls("faro-demo-role");
   if (savedRole === "helfer" || savedRole === "kunde") state.role = savedRole;
+  state.name = ls("faro-demo-name") || "";
+  try { var a = JSON.parse(ls("faro-demo-area") || "null"); if (a && /^\d{5}$/.test(a.plz)) state.area = a; } catch (e) {}
   initForm();
+  renderProfile();
+  renderArea();
   render();
+  setInterval(function () { checkExpiry(); render(); }, 60000);
 
   function localId() {
     var id = ls("faro-demo-me");
@@ -669,6 +966,7 @@ textarea { min-height: 72px; resize: vertical; }
       store.subscribe(function (list) {
         state.errands = list;
         state.loaded = true;
+        checkExpiry();
         if (!list.some(function (e) { return e.clientId === state.me; }) && state.role === "kunde" && !state.formOpened) {
           state.formOpened = true;
           setFormOpen(true, true);
