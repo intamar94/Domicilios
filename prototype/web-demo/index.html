@@ -239,6 +239,10 @@ textarea { min-height: 72px; resize: vertical; }
     <div class="map3d" id="map3d" aria-hidden="true"><span class="maphint" id="map-hint">Ziehen zum Drehen · zwei Finger zum Zoomen</span></div>
     <div class="mapbody">
       <h2 id="map-title">Karte</h2>
+      <form class="inline" id="map-focus-form" novalidate>
+        <input type="text" id="m-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Karte um diese Postleitzahl zeigen">
+        <button type="submit" class="btn small">Gebiet anzeigen</button>
+      </form>
       <p class="legend" id="map-legend"></p>
       <div class="chips" id="map-chips" role="group" aria-label="Gebiete"></div>
       <p class="note" id="map-sheet" aria-live="polite"></p>
@@ -405,7 +409,7 @@ textarea { min-height: 72px; resize: vertical; }
     confirm: null, pinDraft: {}, nfReason: {}, busy: {},
     chatOpen: {}, chatUnsub: {}, msgs: {}, chatDraft: {},
     area: null, showDone: false, expiring: {}, formOpened: false,
-    view: "list", mapSel: null, helfers: []
+    view: "list", mapSel: null, helfers: [], mapFocus: null
   };
   var store = null;
 
@@ -447,6 +451,7 @@ textarea { min-height: 72px; resize: vertical; }
     var n = state.area.range === "exact" ? 5 : state.area.range === "near" ? 3 : 2;
     return String(plz).slice(0, n) === state.area.plz.slice(0, n);
   }
+  function plzKnown(plz) { return !GEO.data || !!GEO.data[plz]; }
   function needName() {
     if (state.name) return false;
     toast("Bitte zuerst oben deinen Namen eingeben.");
@@ -554,8 +559,10 @@ textarea { min-height: 72px; resize: vertical; }
   function saveArea() {
     var plz = $("a-plz").value.trim();
     if (!/^\d{5}$/.test(plz)) { toast("Bitte eine fünfstellige PLZ eingeben."); $("a-plz").focus(); return; }
+    if (!plzKnown(plz)) { toast("Die PLZ " + plz + " gibt es in Deutschland nicht. Bitte prüfen."); $("a-plz").focus(); return; }
     state.area = { plz: plz, range: $("a-range").value };
     ls("faro-demo-area", JSON.stringify(state.area));
+    state.mapFocus = null; ls("faro-demo-mapfocus", "");
     if (store && state.me) store.saveHelferArea(state.me, { plz: plz, range: state.area.range, updatedAt: Date.now() }).catch(function () {});
     renderArea();
     render();
@@ -642,8 +649,10 @@ textarea { min-height: 72px; resize: vertical; }
     var deadline = computeDeadline();
     var problems = [];
     if (!/^\d{5}$/.test(plzA)) problems.push("PLZ bei „" + c.from + "“ fehlt oder hat nicht fünf Ziffern.");
+    else if (!plzKnown(plzA)) problems.push("Die PLZ " + plzA + " gibt es in Deutschland nicht.");
     if (!addrA) problems.push("Adresse bei „" + c.from + "“ fehlt.");
     if (!/^\d{5}$/.test(plzB)) problems.push("PLZ bei „" + c.to + "“ fehlt oder hat nicht fünf Ziffern.");
+    else if (!plzKnown(plzB)) problems.push("Die PLZ " + plzB + " gibt es in Deutschland nicht.");
     if (!addrB) problems.push("Adresse bei „" + c.to + "“ fehlt.");
     if (!deadline) problems.push("Bitte eine Uhrzeit angeben.");
     else if (deadline < Date.now() + 30 * 60000) problems.push("Die Zeit ist zu knapp oder schon vorbei. Bitte mindestens 30 Minuten ab jetzt wählen.");
@@ -859,7 +868,7 @@ textarea { min-height: 72px; resize: vertical; }
 
   var Map3D = (function () {
     var ok = !!(window.THREE && window.THREE.OrbitControls && window.d3 && window.d3.Delaunay);
-    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null, lastData = null;
+    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null, lastData = null, tileRefs = {}, curSel = null;
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     function el() { return $("map3d"); }
     function tok(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888888"; }
@@ -1008,14 +1017,22 @@ textarea { min-height: 72px; resize: vertical; }
       if (!root) return;
       scene.remove(root);
       root.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
-      root = null; clickables = []; anims = [];
+      root = null; clickables = []; anims = []; tileRefs = {}; curSel = null;
+    }
+    function select(plz) {
+      if (curSel === plz) return;
+      [curSel, plz].forEach(function (k) {
+        var r = k && tileRefs[k]; if (!r) return;
+        var on = k === plz; r.edges.visible = on; r.group.position.y = on ? 0.06 : 0;
+      });
+      curSel = plz; draw();
     }
 
     function build(data) {
       lastData = data;
       if (!init()) return false;
-      var s2 = JSON.stringify(data) + document.documentElement.getAttribute("data-theme") + isDark();
-      if (s2 === sig) { resize(); return true; }
+      var s2 = JSON.stringify(data, function (k, v) { return k === "selected" ? undefined : v; }) + document.documentElement.getAttribute("data-theme") + isDark();
+      if (s2 === sig) { resize(); select(data.selected || null); return true; }
       sig = s2; clear();
       var dark = isDark();
       root = new THREE.Group(); scene.add(root);
@@ -1023,7 +1040,7 @@ textarea { min-height: 72px; resize: vertical; }
       scene.fog = new THREE.Fog(col("--surface-2"), 22, 42);
       root.add(new THREE.HemisphereLight(0xffffff, col("--deep"), dark ? 0.5 : 0.55));
       var sun = new THREE.DirectionalLight(0xffffff, dark ? 0.5 : 0.7);
-      sun.position.set(-4, 10, 6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0008;
+      sun.position.set(-4, 10, 6); sun.castShadow = true; var sm = (el().clientWidth || 400) < 600 ? 1024 : 2048; sun.shadow.mapSize.set(sm, sm); sun.shadow.bias = -0.0008;
       var sc = sun.shadow.camera; sc.left = -9; sc.right = 9; sc.top = 9; sc.bottom = -9; sc.near = 1; sc.far = 40;
       root.add(sun);
 
@@ -1064,10 +1081,9 @@ textarea { min-height: 72px; resize: vertical; }
         geo.rotateX(-Math.PI / 2);
         var m = new THREE.Mesh(geo, t.focus ? mat.focus : (t.errands || t.helfers) ? mat.busy : mat.land);
         m.castShadow = true; m.receiveShadow = true; g.add(m);
-        if (t.selected) {
-          var eg = new THREE.EdgesGeometry(geo, 30), lines = new THREE.LineSegments(eg, mat.edge);
-          lines.position.y = 0.005; g.add(lines);
-        }
+        var lines = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), mat.edge);
+        lines.position.y = 0.005; lines.visible = false; g.add(lines);
+        tileRefs[t.plz] = { group: g, edges: lines };
         var top = h + 0.03;
         /* Häuser und Bäume: dekorativ, keine echten Gebäude */
         var rand = rng(hash(t.plz)), bb = inset.reduce(function (a, p) { return [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.max(a[2], p[0]), Math.max(a[3], p[1])]; }, [99, 99, -99, -99]);
@@ -1087,8 +1103,8 @@ textarea { min-height: 72px; resize: vertical; }
           box.position.set(p[0], top + bh / 2, -p[1]); box.rotation.y = rand() * Math.PI; box.castShadow = true; box.receiveShadow = true; g.add(box);
           if (bh > 0.3) { var win = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 0.025, w * 0.4), mat.win); win.position.set(p[0], top + bh * 0.72, -p[1]); win.rotation.y = box.rotation.y; g.add(win); }
         }
-        var strong = t.focus || t.selected || t.errands || t.helfers;
-        var lbl = districtLabel(t.plz, strong ? shortName(t.name) : "", t.selected);
+        var strong = t.focus || t.errands || t.helfers;
+        var lbl = districtLabel(t.plz, strong ? shortName(t.name) : "", false);
         lbl.position.set(cc[0], top + (strong ? 0.42 : 0.25), -cc[1]); g.add(lbl);
 
         if (t.focus) {
@@ -1139,7 +1155,8 @@ textarea { min-height: 72px; resize: vertical; }
       var w = el().clientWidth || 1, h = el().clientHeight || 1, vf = camera.fov * Math.PI / 180;
       var hf = 2 * Math.atan(Math.tan(vf / 2) * (w / h)), need = 7.0 / Math.tan(Math.min(vf, hf) / 2);
       var dir = new THREE.Vector3(0, 13.6, 9.4).normalize();
-      camera.position.copy(dir.multiplyScalar(Math.min(32, Math.max(12, need * 0.92)))); controls.update(); draw();
+      camera.position.copy(dir.multiplyScalar(Math.min(32, Math.max(12, need * 0.92)))); controls.update();
+      select(data.selected || null); draw();
       return true;
     }
     return {
@@ -1157,7 +1174,7 @@ textarea { min-height: 72px; resize: vertical; }
   function mapData() {
     var geo = GEO.data; if (!geo) return null;
     var helferRole = state.role === "helfer";
-    var focus = helferRole && state.area ? state.area.plz : null;
+    var focus = state.mapFocus || (helferRole && state.area ? state.area.plz : null);
     if (!focus) {
       var own = state.errands.filter(function (e) { return e.clientId === state.me; })[0];
       focus = own ? own.pickupArea : state.area ? state.area.plz : "10178";
@@ -1175,12 +1192,13 @@ textarea { min-height: 72px; resize: vertical; }
     function t(plz) {
       if (tiles[plz]) return tiles[plz];
       var g = geo[plz]; if (!g || km(c, g) > radiusKm) return null;
-      return (tiles[plz] = { plz: plz, lat: g[0], lng: g[1], name: g[2], errands: 0, helfers: 0, examples: 0, cat: "", focus: plz === focus, selected: plz === state.mapSel });
+      return (tiles[plz] = { plz: plz, lat: g[0], lng: g[1], name: g[2], errands: 0, helfers: 0, examples: 0, cat: "", focus: plz === focus });
     }
     pick.forEach(function (p) { t(p[0]); });
+    var outside = 0;
     if (helferRole) {
       state.errands.forEach(function (e) {
-        if (statusOf(e) === "published" && inArea(e.pickupArea)) { var x = t(e.pickupArea); if (x) { x.errands++; x.cat = x.cat || e.category; } }
+        if (statusOf(e) === "published" && inArea(e.pickupArea)) { var x = t(e.pickupArea); if (x) { x.errands++; x.cat = x.cat || e.category; } else outside++; }
       });
     } else {
       state.helfers.forEach(function (h) { var x = h.plz && t(String(h.plz)); if (x) { x.helfers++; if (h.example) x.examples++; } });
@@ -1190,7 +1208,7 @@ textarea { min-height: 72px; resize: vertical; }
     }
     var list = Object.keys(tiles).map(function (k) { return tiles[k]; });
     list.sort(function (a, b) { return km(c, [a.lat, a.lng]) - km(c, [b.lat, b.lng]); });
-    return { role: state.role, center: { lat: c[0], lng: c[1] }, radiusKm: Math.round(radiusKm * 100) / 100, tiles: list };
+    return { role: state.role, focus: focus, center: { lat: c[0], lng: c[1] }, radiusKm: Math.round(radiusKm * 100) / 100, tiles: list, selected: tiles[state.mapSel] ? state.mapSel : null, outside: outside };
   }
   function mapFallback(msg) {
     $("map3d").innerHTML = '<p class="empty" style="margin:16px">' + esc(msg) + "</p>";
@@ -1229,7 +1247,9 @@ textarea { min-height: 72px; resize: vertical; }
       : sel.helfers + " registrierte Helfer in " + where(sel) + (sel.examples ? " (davon " + sel.examples + " Beispiel)" : "") + ". Genaue Standorte zeigt FARO nie an.";
     else sheet = (helferRole ? "Tippe auf ein Gebiet, um nur dessen Aufträge zu sehen." : "Tippe auf ein Gebiet. FARO zeigt nur, wie viele Helfer dort registriert sind, nie wo sie gerade sind.") +
       " Umkreis ca. " + Math.round(data.radiusKm) + " km um " + where(data.tiles.filter(function (t) { return t.focus; })[0] || data.tiles[0]) + ".";
+    if (helferRole && data.outside) sheet += " " + data.outside + (data.outside === 1 ? " weiterer Auftrag" : " weitere Aufträge") + " in deinem Gebiet " + (data.outside === 1 ? "liegt" : "liegen") + " außerhalb der Karte (siehe Liste).";
     $("map-sheet").textContent = sheet;
+    if (document.activeElement !== $("m-plz")) $("m-plz").value = data.focus;
     if (!Map3D.available()) { mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten."); return; }
     if (!Map3D.show(data, function (plz) { state.mapSel = state.mapSel === plz ? null : plz; render(); })) mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten.");
   }
@@ -1351,7 +1371,7 @@ textarea { min-height: 72px; resize: vertical; }
     if (!t.getAttribute) return;
     if (t.getAttribute("data-pin")) { t.value = t.value.replace(/\D/g, "").slice(0, 4); state.pinDraft[t.getAttribute("data-pin")] = t.value; }
     if (t.getAttribute("data-chat")) state.chatDraft[t.getAttribute("data-chat")] = t.value;
-    if (t.id === "f-from-plz" || t.id === "f-to-plz" || t.id === "a-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
+    if (t.id === "f-from-plz" || t.id === "f-to-plz" || t.id === "a-plz" || t.id === "m-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
   });
   document.addEventListener("keydown", function (ev) {
     var t = ev.target;
@@ -1367,6 +1387,13 @@ textarea { min-height: 72px; resize: vertical; }
   function setRole(r) { state.role = r; state.confirm = null; state.mapSel = null; ls("faro-demo-role", r); render(); }
   $("v-list").addEventListener("click", function () { state.view = "list"; state.mapSel = null; render(); });
   $("v-map").addEventListener("click", function () { state.view = "map"; render(); });
+  $("map-focus-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var v = $("m-plz").value.trim();
+    if (!/^\d{5}$/.test(v)) { toast("Bitte eine fünfstellige PLZ eingeben."); return; }
+    if (!plzKnown(v)) { toast("Die PLZ " + v + " gibt es in Deutschland nicht. Bitte prüfen."); return; }
+    state.mapFocus = v; state.mapSel = null; ls("faro-demo-mapfocus", v); $("m-plz").blur(); render();
+  });
   $("map-chips").addEventListener("click", function (ev) {
     var b = ev.target.closest("button[data-plz]"); if (!b) return;
     var plz = b.getAttribute("data-plz"); state.mapSel = state.mapSel === plz ? null : plz; render();
@@ -1379,9 +1406,11 @@ textarea { min-height: 72px; resize: vertical; }
   /* ---------- Start ---------- */
   var savedRole = ls("faro-demo-role");
   if (savedRole === "helfer" || savedRole === "kunde") state.role = savedRole;
+  var savedFocus = ls("faro-demo-mapfocus"); if (/^\d{5}$/.test(savedFocus || "")) state.mapFocus = savedFocus;
   state.name = ls("faro-demo-name") || "";
   try { var a = JSON.parse(ls("faro-demo-area") || "null"); if (a && /^\d{5}$/.test(a.plz)) state.area = a; } catch (e) {}
   initForm();
+  loadGeo();
   renderProfile();
   renderArea();
   render();
