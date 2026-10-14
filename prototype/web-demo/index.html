@@ -18,6 +18,7 @@
   --amber: #f2a516;
   --amber-soft: #fff1d2;
   --amber-ink: #6b4300;
+  --amber-strong: #b36b00;
   --deep: #123a5c;
   --deep-soft: #e1ebf4;
   --ok: #1b6e3a;
@@ -31,14 +32,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0a1620; --surface: #112331; --surface-2: #0d1d29; --ink: #e6eef2; --muted: #a2b4c2; --line: #233a4b;
-    --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a;
+    --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a; --amber-strong: #f5b843;
     --deep: #a9cdf0; --deep-soft: #16304a; --ok: #6fd596; --ok-soft: #143a24; --bad: #ff9a90; --bad-soft: #3d1a17; --focus: #f5b843;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0a1620; --surface: #112331; --surface-2: #0d1d29; --ink: #e6eef2; --muted: #a2b4c2; --line: #233a4b;
-  --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a;
+  --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a; --amber-strong: #f5b843;
   --deep: #a9cdf0; --deep-soft: #16304a; --ok: #6fd596; --ok-soft: #143a24; --bad: #ff9a90; --bad-soft: #3d1a17; --focus: #f5b843;
   color-scheme: dark;
 }
@@ -184,7 +185,7 @@ textarea { min-height: 72px; resize: vertical; }
 .seg button { border: 0; background: transparent; border-radius: 9px; padding: 8px 14px; min-height: 40px; font-weight: 700; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--deep); color: var(--bg); }
 .mappanel { padding: 0; overflow: hidden; gap: 0; }
-.map3d { position: relative; height: 340px; background: var(--surface-2); touch-action: none; }
+.map3d { position: relative; height: 380px; background: var(--surface-2); touch-action: none; }
 .map3d canvas { display: block; width: 100%; height: 100%; }
 .map3d .maphint { position: absolute; left: 10px; bottom: 10px; font-size: 0.8rem; background: var(--surface); color: var(--muted); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); pointer-events: none; }
 .mapbody { display: grid; gap: 10px; padding: 12px 14px 14px; }
@@ -241,6 +242,7 @@ textarea { min-height: 72px; resize: vertical; }
       <p class="legend" id="map-legend"></p>
       <div class="chips" id="map-chips" role="group" aria-label="Gebiete"></div>
       <p class="note" id="map-sheet" aria-live="polite"></p>
+      <p class="hint">Lage der Gebiete nach PLZ-Mittelpunkt (Daten: WZB plz_geocoord, Apache-2.0). Häuser und Bäume sind nur Dekoration. Standort per GPS kommt in der echten App.</p>
     </div>
   </section>
 
@@ -297,7 +299,7 @@ textarea { min-height: 72px; resize: vertical; }
       <div class="price" id="f-price" aria-live="polite"></div>
       <div class="err" id="f-err" role="alert" hidden></div>
       <div class="actions">
-        <button type="submit" class="btn primary">Auftrag veröffentlichen</button>
+        <button type="submit" class="btn accent">Auftrag veröffentlichen</button>
         <button type="button" class="btn ghost" id="btn-cancel-form">Abbrechen</button>
       </div>
     </form>
@@ -338,6 +340,7 @@ textarea { min-height: 72px; resize: vertical; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6.0.4/dist/d3-delaunay.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -839,52 +842,137 @@ textarea { min-height: 72px; resize: vertical; }
   }
 
 
-  /* ---------- 3D-Karte (Gebiete nach PLZ, keine genauen Positionen) ---------- */
+  /* ---------- 3D-Karte: echte Lage der PLZ-Gebiete, keine genauen Personen-Standorte ---------- */
+  var GEO = { data: null, loading: false, failed: false };
+  function loadGeo() {
+    if (GEO.data || GEO.loading || GEO.failed) return;
+    GEO.loading = true;
+    fetch("plz.json").then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+      .then(function (d) { GEO.data = d; }).catch(function () { GEO.failed = true; })
+      .then(function () { GEO.loading = false; render(); });
+  }
+  function km(a, b) {
+    var x = (b[1] - a[1]) * Math.cos(((a[0] + b[0]) / 2) * Math.PI / 180) * 111.32, y = (b[0] - a[0]) * 110.57;
+    return Math.sqrt(x * x + y * y);
+  }
+  function shortName(n) { return String(n || "").replace(/^Berlin |^Hamburg |^München |^Köln |^Frankfurt am Main /, ""); }
+
   var Map3D = (function () {
-    var ok = !!(window.THREE && window.THREE.OrbitControls);
-    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null;
+    var ok = !!(window.THREE && window.THREE.OrbitControls && window.d3 && window.d3.Delaunay);
+    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null, lastData = null;
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    var el = function () { return $("map3d"); };
+    function el() { return $("map3d"); }
     function tok(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888888"; }
     function col(n) { return new THREE.Color(tok(n)); }
     function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
     function rng(seed) { return function () { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }; }
-    function hexes(n) {
-      var out = [[0, 0]], dirs = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
-      for (var k = 1; out.length < n; k++) {
-        var q = -k, r = k;
-        for (var d = 0; d < 6; d++) for (var j = 0; j < k; j++) { out.push([q, r]); q += dirs[d][0]; r += dirs[d][1]; }
-      }
-      return out.slice(0, n);
-    }
-    function label(text, fg, bg, w) {
-      var c = document.createElement("canvas"); c.width = w || 256; c.height = 96;
-      var g = c.getContext("2d");
-      g.fillStyle = bg; var r = 40;
-      g.beginPath(); g.moveTo(r, 8); g.lineTo(c.width - r, 8); g.quadraticCurveTo(c.width - 8, 8, c.width - 8, 48); g.quadraticCurveTo(c.width - 8, 88, c.width - r, 88); g.lineTo(r, 88); g.quadraticCurveTo(8, 88, 8, 48); g.quadraticCurveTo(8, 8, r, 8); g.fill();
-      g.fillStyle = fg; g.font = "700 46px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-      g.fillText(text, c.width / 2, 50);
+    function isDark() { var c = new THREE.Color(tok("--bg")); var hsl = {}; c.getHSL(hsl); return hsl.l < 0.3; }
+
+    /* Zeichen-Helfer für Beschriftungen und Symbole */
+    function canvasSprite(w, h, paint, worldH) {
+      var c = document.createElement("canvas"); c.width = w; c.height = h;
+      paint(c.getContext("2d"), w, h);
       var t = new THREE.CanvasTexture(c); t.anisotropy = 4;
       var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
-      sp.scale.set((c.width / 96) * 0.36, 0.36, 1); sp.renderOrder = 10;
+      sp.scale.set(worldH * w / h, worldH, 1); sp.renderOrder = 10;
       return sp;
     }
+    function pill(g, w, h, r, fill, stroke) {
+      g.beginPath(); g.moveTo(r, 2); g.lineTo(w - r, 2); g.arcTo(w - 2, 2, w - 2, r, r - 2); g.lineTo(w - 2, h - r); g.arcTo(w - 2, h - 2, w - r, h - 2, r - 2);
+      g.lineTo(r, h - 2); g.arcTo(2, h - 2, 2, h - r, r - 2); g.lineTo(2, r); g.arcTo(2, 2, r, 2, r - 2); g.closePath();
+      g.fillStyle = fill; g.fill(); if (stroke) { g.lineWidth = 3; g.strokeStyle = stroke; g.stroke(); }
+    }
+    function districtLabel(plz, name, strong) {
+      var two = !!name;
+      return canvasSprite(two ? 360 : 200, two ? 120 : 72, function (g, w, h) {
+        pill(g, w, h, 24, tok("--surface"), strong ? tok("--amber-strong") : tok("--line"));
+        g.fillStyle = tok("--ink"); g.textAlign = "center"; g.textBaseline = "middle";
+        g.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.fillText(plz, w / 2, two ? 42 : h / 2 + 2);
+        if (two) { g.fillStyle = tok("--muted"); g.font = "400 30px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.fillText(name.length > 20 ? name.slice(0, 19) + "…" : name, w / 2, 88); }
+      }, two ? 0.42 : 0.26);
+    }
+    function icon(g, cat, cx, cy, s, color) {
+      g.strokeStyle = color; g.fillStyle = color; g.lineWidth = s * 0.12; g.lineCap = "round"; g.lineJoin = "round";
+      if (cat === "pickup_click_collect") {
+        g.strokeRect(cx - s * 0.38, cy - s * 0.15, s * 0.76, s * 0.6);
+        g.beginPath(); g.arc(cx, cy - s * 0.15, s * 0.2, Math.PI, 0); g.stroke();
+      } else if (cat === "task_parcel_return" || cat === "task_parcel_pickup") {
+        g.strokeRect(cx - s * 0.38, cy - s * 0.3, s * 0.76, s * 0.66);
+        g.beginPath(); g.moveTo(cx - s * 0.38, cy - s * 0.08); g.lineTo(cx + s * 0.38, cy - s * 0.08); g.moveTo(cx, cy - s * 0.3); g.lineTo(cx, cy - s * 0.08); g.stroke();
+        if (cat === "task_parcel_return") { g.beginPath(); g.moveTo(cx + s * 0.18, cy + s * 0.18); g.lineTo(cx - s * 0.16, cy + s * 0.18); g.moveTo(cx - s * 0.05, cy + s * 0.08); g.lineTo(cx - s * 0.16, cy + s * 0.18); g.lineTo(cx - s * 0.05, cy + s * 0.28); g.stroke(); }
+      } else if (cat === "task_key_handover") {
+        g.beginPath(); g.arc(cx - s * 0.2, cy, s * 0.18, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.moveTo(cx - s * 0.02, cy); g.lineTo(cx + s * 0.4, cy); g.moveTo(cx + s * 0.28, cy); g.lineTo(cx + s * 0.28, cy + s * 0.14); g.moveTo(cx + s * 0.4, cy); g.lineTo(cx + s * 0.4, cy + s * 0.16); g.stroke();
+      } else if (cat === "task_documents") {
+        g.strokeRect(cx - s * 0.4, cy - s * 0.26, s * 0.8, s * 0.52);
+        g.beginPath(); g.moveTo(cx - s * 0.4, cy - s * 0.26); g.lineTo(cx, cy + s * 0.06); g.lineTo(cx + s * 0.4, cy - s * 0.26); g.stroke();
+      } else if (cat === "person") {
+        g.beginPath(); g.arc(cx, cy - s * 0.18, s * 0.17, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(cx - s * 0.32, cy + s * 0.38); g.quadraticCurveTo(cx - s * 0.3, cy + s * 0.02, cx, cy + s * 0.02); g.quadraticCurveTo(cx + s * 0.3, cy + s * 0.02, cx + s * 0.32, cy + s * 0.38); g.closePath(); g.fill();
+      } else {
+        g.beginPath(); g.arc(cx - s * 0.16, cy - s * 0.16, s * 0.16, Math.PI * 0.25, Math.PI * 1.9); g.stroke();
+        g.beginPath(); g.moveTo(cx - s * 0.04, cy - s * 0.04); g.lineTo(cx + s * 0.34, cy + s * 0.34); g.stroke();
+      }
+    }
+    function pinBadge(cat, count) {
+      return canvasSprite(count > 1 ? 196 : 128, 128, function (g, w, h) {
+        g.fillStyle = tok("--surface"); g.beginPath(); g.arc(64, 64, 52, 0, Math.PI * 2); g.fill();
+        g.lineWidth = 5; g.strokeStyle = tok("--amber-strong"); g.stroke();
+        icon(g, cat, 64, 66, 64, tok("--deep"));
+        if (count > 1) {
+          g.fillStyle = tok("--deep"); g.beginPath(); g.arc(156, 38, 34, 0, Math.PI * 2); g.fill();
+          g.fillStyle = tok("--bg"); g.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(String(count), 156, 40);
+        }
+      }, 0.44);
+    }
+    function helferBadge(n) {
+      var text = n + " Helfer";
+      return canvasSprite(260, 96, function (g, w, h) {
+        pill(g, w, h, 46, tok("--teal"), null);
+        icon(g, "person", 52, 50, 56, tok("--teal-ink"));
+        g.fillStyle = tok("--teal-ink"); g.font = "700 38px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(text, 92, 50);
+      }, 0.32);
+    }
+
+    /* Geometrie */
+    function clipConvex(poly, clip) {
+      var out = poly;
+      for (var i = 0; i < clip.length && out.length; i++) {
+        var a = clip[i], b = clip[(i + 1) % clip.length], inp = out; out = [];
+        var inside = function (p) { return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= 0; };
+        for (var j = 0; j < inp.length; j++) {
+          var p = inp[j], q = inp[(j + 1) % inp.length], ip = inside(p), iq = inside(q);
+          if (ip) out.push(p);
+          if (ip !== iq) {
+            var dx = q[0] - p[0], dy = q[1] - p[1], ex = b[0] - a[0], ey = b[1] - a[1];
+            var t = (ex * (a[1] - p[1]) - ey * (a[0] - p[0])) / (ex * dy - ey * dx);
+            out.push([p[0] + t * dx, p[1] + t * dy]);
+          }
+        }
+      }
+      return out;
+    }
+    function area(poly) { var s = 0; for (var i = 0; i < poly.length; i++) { var a = poly[i], b = poly[(i + 1) % poly.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }
+    function centroid(poly) { var x = 0, y = 0; poly.forEach(function (p) { x += p[0]; y += p[1]; }); return [x / poly.length, y / poly.length]; }
+    function inPoly(p, poly) {
+      var c = false;
+      for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        if (((poly[i][1] > p[1]) !== (poly[j][1] > p[1])) && (p[0] < (poly[j][0] - poly[i][0]) * (p[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0])) c = !c;
+      }
+      return c;
+    }
+
     function init() {
       if (renderer || !ok) return !!renderer;
-      try {
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-      } catch (e) { ok = false; return false; }
+      try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { ok = false; return false; }
       renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       el().insertBefore(renderer.domElement, el().firstChild);
       scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-      camera.position.set(0, 7.5, 7.5);
+      camera = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
       controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = !reduce; controls.dampingFactor = 0.08; controls.enablePan = false;
-      controls.minDistance = 4; controls.maxDistance = 16; controls.minPolarAngle = 0.35; controls.maxPolarAngle = 1.15;
-      controls.target.set(0, 0, 0);
+      controls.minPolarAngle = 0.25; controls.maxPolarAngle = 1.1;
       controls.addEventListener("change", function () { if (!running) draw(); });
       var down = null;
       renderer.domElement.addEventListener("pointerdown", function (ev) { down = { x: ev.clientX, y: ev.clientY }; });
@@ -898,12 +986,9 @@ textarea { min-height: 72px; resize: vertical; }
         if (o && onPick) onPick(o.userData.plz);
       });
       window.addEventListener("resize", resize);
-      if (window.matchMedia) {
-        var mq = window.matchMedia("(prefers-color-scheme: dark)");
-        var re = function () { sig = ""; if (lastData) build(lastData); };
-        if (mq.addEventListener) mq.addEventListener("change", re);
-        new MutationObserver(re).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-      }
+      var re = function () { sig = ""; if (lastData) build(lastData); };
+      if (window.matchMedia) { var mq = window.matchMedia("(prefers-color-scheme: dark)"); if (mq.addEventListener) mq.addEventListener("change", re); }
+      new MutationObserver(re).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
       return true;
     }
     function resize() {
@@ -922,94 +1007,141 @@ textarea { min-height: 72px; resize: vertical; }
     function clear() {
       if (!root) return;
       scene.remove(root);
-      root.traverse(function (o) {
-        if (o.geometry) o.geometry.dispose();
-        if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
-      });
+      root.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
       root = null; clickables = []; anims = [];
     }
-    var lastData = null;
+
     function build(data) {
       lastData = data;
       if (!init()) return false;
-      var s2 = JSON.stringify(data) + document.documentElement.getAttribute("data-theme");
+      var s2 = JSON.stringify(data) + document.documentElement.getAttribute("data-theme") + isDark();
       if (s2 === sig) { resize(); return true; }
       sig = s2; clear();
+      var dark = isDark();
       root = new THREE.Group(); scene.add(root);
-      var dark = (tok("--bg").replace("#", "") || "fff").length && new THREE.Color(tok("--bg")).getHSL({}).l < 0.3;
       scene.background = col("--surface-2");
-      root.add(new THREE.HemisphereLight(0xffffff, col("--deep"), dark ? 0.55 : 0.5));
-      var sun = new THREE.DirectionalLight(0xffffff, dark ? 0.55 : 0.65);
-      sun.position.set(5, 9, 4); sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
-      var sc = sun.shadow.camera; sc.left = -8; sc.right = 8; sc.top = 8; sc.bottom = -8; sc.near = 1; sc.far = 30;
+      scene.fog = new THREE.Fog(col("--surface-2"), 22, 42);
+      root.add(new THREE.HemisphereLight(0xffffff, col("--deep"), dark ? 0.5 : 0.55));
+      var sun = new THREE.DirectionalLight(0xffffff, dark ? 0.5 : 0.7);
+      sun.position.set(-4, 10, 6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0008;
+      var sc = sun.shadow.camera; sc.left = -9; sc.right = 9; sc.top = 9; sc.bottom = -9; sc.near = 1; sc.far = 40;
       root.add(sun);
-      var ground = new THREE.Mesh(new THREE.CircleGeometry(14, 48), new THREE.MeshStandardMaterial({ color: dark ? col("--surface") : col("--teal-soft"), roughness: 1 }));
-      ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.receiveShadow = true; root.add(ground);
 
-      var tileMat = new THREE.MeshStandardMaterial({ color: dark ? col("--line") : col("--surface"), roughness: 0.9 });
-      var focusMat = new THREE.MeshStandardMaterial({ color: dark ? col("--teal-soft") : col("--amber-soft"), roughness: 0.9 });
-      var bMats = (dark ? [col("--deep-soft"), col("--surface-2"), col("--teal-soft")] : [col("--deep"), col("--deep-soft"), col("--teal"), col("--surface-2")]).map(function (c) { return new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }); });
-      var winMat = new THREE.MeshStandardMaterial({ color: col("--amber"), emissive: col("--amber"), emissiveIntensity: dark ? 0.9 : 0.15 });
-      var pos = hexes(data.tiles.length), size = 1.05;
-      data.tiles.forEach(function (t, i) {
-        var q = pos[i][0], r = pos[i][1];
-        var x = size * Math.sqrt(3) * (q + r / 2), z = size * 1.5 * r;
-        var g = new THREE.Group(); g.position.set(x, 0, z); g.userData.plz = t.plz; root.add(g); clickables.push(g);
-        var hex = new THREE.Mesh(new THREE.CylinderGeometry(0.98, 1.02, 0.22, 6), t.focus ? focusMat : tileMat);
-        hex.rotation.y = Math.PI / 6; hex.position.y = 0.11; hex.receiveShadow = true; hex.castShadow = true; g.add(hex);
+      /* Projektion: km um den Mittelpunkt, Norden = -z */
+      var c0 = [data.center.lat, data.center.lng], R = data.radiusKm, S = 6 / R;
+      function proj(lat, lng) { return [(lng - c0[1]) * Math.cos(c0[0] * Math.PI / 180) * 111.32 * S, (lat - c0[0]) * 110.57 * S]; }
+      var pts = data.tiles.map(function (t) { return proj(t.lat, t.lng); });
+      var circle = []; for (var i = 0; i < 64; i++) { var a = (i / 64) * Math.PI * 2; circle.push([Math.cos(a) * 6.4, Math.sin(a) * 6.4]); }
+      var vor = window.d3.Delaunay.from(pts).voronoi([-8, -8, 8, 8]);
+
+      var base = new THREE.Mesh(new THREE.CylinderGeometry(6.55, 6.75, 0.3, 96), new THREE.MeshStandardMaterial({ color: dark ? col("--surface") : col("--deep-soft"), roughness: 1 }));
+      base.position.y = -0.15; base.receiveShadow = true; root.add(base);
+      var rim = new THREE.Mesh(new THREE.TorusGeometry(6.6, 0.04, 8, 128), new THREE.MeshStandardMaterial({ color: col("--deep") }));
+      rim.rotation.x = Math.PI / 2; rim.position.y = 0.0; root.add(rim);
+
+      var mat = {
+        land: new THREE.MeshStandardMaterial({ color: dark ? col("--line") : col("--surface"), roughness: 0.85 }),
+        focus: new THREE.MeshStandardMaterial({ color: col("--amber-soft"), roughness: 0.85 }),
+        busy: new THREE.MeshStandardMaterial({ color: col("--teal-soft"), roughness: 0.85 }),
+        win: new THREE.MeshStandardMaterial({ color: col("--amber"), emissive: col("--amber"), emissiveIntensity: dark ? 0.9 : 0.1 }),
+        tree: new THREE.MeshStandardMaterial({ color: col("--teal"), roughness: 0.9 }),
+        edge: new THREE.LineBasicMaterial({ color: col("--amber-strong") })
+      };
+      var bMats = (dark ? ["--deep-soft", "--surface-2", "--teal-soft", "--surface"] : ["--surface-2", "--deep-soft", "--surface-2", "--deep", "--teal-soft"])
+        .map(function (n) { return new THREE.MeshStandardMaterial({ color: col(n), roughness: 0.75 }); });
+
+      data.tiles.forEach(function (t, idx) {
+        var cell = vor.cellPolygon(idx); if (!cell) return;
+        cell = cell.slice(0, -1);
+        if (area(cell) < 0) cell.reverse();
+        cell = clipConvex(cell, circle); if (cell.length < 3) return;
+        var cc = centroid(cell);
+        var inset = cell.map(function (p) { var dx = p[0] - cc[0], dy = p[1] - cc[1], d = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.max(0.5, (d - 0.07) / d); return [cc[0] + dx * k, cc[1] + dy * k]; });
+        var g = new THREE.Group(); g.userData.plz = t.plz; root.add(g); clickables.push(g);
+        var h = t.focus ? 0.26 : t.errands || t.helfers ? 0.2 : 0.14;
+        var shape = new THREE.Shape(inset.map(function (p) { return new THREE.Vector2(p[0], p[1]); }));
+        var geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2 });
+        geo.rotateX(-Math.PI / 2);
+        var m = new THREE.Mesh(geo, t.focus ? mat.focus : (t.errands || t.helfers) ? mat.busy : mat.land);
+        m.castShadow = true; m.receiveShadow = true; g.add(m);
         if (t.selected) {
-          var sel = new THREE.Mesh(new THREE.TorusGeometry(0.98, 0.04, 6, 6), new THREE.MeshBasicMaterial({ color: col("--amber") }));
-          sel.rotation.x = Math.PI / 2; sel.rotation.z = Math.PI / 6; sel.position.y = 0.23; g.add(sel);
+          var eg = new THREE.EdgesGeometry(geo, 30), lines = new THREE.LineSegments(eg, mat.edge);
+          lines.position.y = 0.005; g.add(lines);
         }
-        if (t.focus) {
-          var lh = new THREE.Group(); lh.position.set(0, 0.22, 0); g.add(lh);
-          var tower = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.18, 0.95, 16), new THREE.MeshStandardMaterial({ color: col("--teal"), roughness: 0.6 }));
-          tower.position.y = 0.475; tower.castShadow = true; lh.add(tower);
-          [0.25, 0.6].forEach(function (y) { var band = new THREE.Mesh(new THREE.CylinderGeometry(0.155 - y * 0.06, 0.165 - y * 0.06, 0.1, 16), winMat); band.position.y = y; lh.add(band); });
-          var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), new THREE.MeshStandardMaterial({ color: col("--amber"), emissive: col("--amber"), emissiveIntensity: 1 }));
-          lamp.position.y = 1.03; lh.add(lamp);
-          var roof = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.18, 16), new THREE.MeshStandardMaterial({ color: col("--deep") }));
-          roof.position.y = 1.2; roof.castShadow = true; lh.add(roof);
-          var beam = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.5, 24, 1, true), new THREE.MeshBasicMaterial({ color: col("--amber"), transparent: true, opacity: dark ? 0.3 : 0.22, side: THREE.DoubleSide, depthWrite: false }));
-          beam.geometry.translate(0, -0.75, 0); beam.rotation.z = Math.PI / 2;
-          var pivot = new THREE.Group(); pivot.position.y = 1.03; pivot.add(beam); lh.add(pivot);
-          if (!reduce) anims.push(function (s) { pivot.rotation.y = s * 0.8; });
-        } else {
-          var rand = rng(hash(t.plz)), nb = 4 + Math.floor(rand() * 4);
-          for (var b = 0; b < nb; b++) {
-            var a = rand() * Math.PI * 2, d = 0.2 + rand() * 0.5, h = 0.15 + rand() * 0.55, w = 0.16 + rand() * 0.16;
-            var box = new THREE.Mesh(new THREE.BoxGeometry(w, h, w * (0.8 + rand() * 0.6)), bMats[Math.floor(rand() * bMats.length)]);
-            box.position.set(Math.cos(a) * d, 0.22 + h / 2, Math.sin(a) * d); box.rotation.y = rand() * Math.PI;
-            box.castShadow = true; box.receiveShadow = true; g.add(box);
-            if (h > 0.4) { var win = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 0.04, w * 0.3), winMat); win.position.set(box.position.x, 0.22 + h * 0.7, box.position.z); win.rotation.y = box.rotation.y; g.add(win); }
+        var top = h + 0.03;
+        /* Häuser und Bäume: dekorativ, keine echten Gebäude */
+        var rand = rng(hash(t.plz)), bb = inset.reduce(function (a, p) { return [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.max(a[2], p[0]), Math.max(a[3], p[1])]; }, [99, 99, -99, -99]);
+        var nb = Math.min(12, Math.max(3, Math.round(Math.abs(area(inset)) * 5))), placed = 0, tries = 0;
+        while (placed < nb && tries++ < 120) {
+          var p = [bb[0] + rand() * (bb[2] - bb[0]), bb[1] + rand() * (bb[3] - bb[1])];
+          var shrunk = inset.map(function (q) { return [cc[0] + (q[0] - cc[0]) * 0.8, cc[1] + (q[1] - cc[1]) * 0.8]; });
+          if (!inPoly(p, shrunk)) continue;
+          if (t.focus && Math.hypot(p[0] - cc[0], p[1] - cc[1]) < 0.35) continue;
+          placed++;
+          if (rand() < 0.22) {
+            var tr = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.2, 7), mat.tree); tr.position.set(p[0], top + 0.1, -p[1]); tr.castShadow = true; g.add(tr);
+            continue;
           }
+          var w = 0.1 + rand() * 0.14, bh = 0.08 + rand() * (t.focus ? 0.3 : 0.45);
+          var box = new THREE.Mesh(new THREE.BoxGeometry(w, bh, w * (0.7 + rand() * 0.8)), bMats[Math.floor(rand() * bMats.length)]);
+          box.position.set(p[0], top + bh / 2, -p[1]); box.rotation.y = rand() * Math.PI; box.castShadow = true; box.receiveShadow = true; g.add(box);
+          if (bh > 0.3) { var win = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 0.025, w * 0.4), mat.win); win.position.set(p[0], top + bh * 0.72, -p[1]); win.rotation.y = box.rotation.y; g.add(win); }
         }
-        var lbl = label(t.plz, tok("--ink"), tok("--surface"));
-        lbl.position.set(0, 0.3, 0.78); g.add(lbl);
+        var strong = t.focus || t.selected || t.errands || t.helfers;
+        var lbl = districtLabel(t.plz, strong ? shortName(t.name) : "", t.selected);
+        lbl.position.set(cc[0], top + (strong ? 0.42 : 0.25), -cc[1]); g.add(lbl);
+
+        if (t.focus) {
+          var lh = new THREE.Group(); lh.position.set(cc[0], top, -cc[1]); g.add(lh);
+          var tower = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.15, 0.8, 20), new THREE.MeshStandardMaterial({ color: col("--surface"), roughness: 0.5 }));
+          tower.position.y = 0.4; tower.castShadow = true; lh.add(tower);
+          [0.14, 0.42].forEach(function (y) { var band = new THREE.Mesh(new THREE.CylinderGeometry(0.135 - y * 0.07, 0.14 - y * 0.07, 0.13, 20), new THREE.MeshStandardMaterial({ color: col("--teal"), roughness: 0.5 })); band.position.y = y; lh.add(band); });
+          var gallery = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.03, 20), new THREE.MeshStandardMaterial({ color: col("--deep") })); gallery.position.y = 0.81; lh.add(gallery);
+          var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshStandardMaterial({ color: col("--amber"), emissive: col("--amber"), emissiveIntensity: 1 })); lamp.position.y = 0.9; lh.add(lamp);
+          var roof = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.16, 20), new THREE.MeshStandardMaterial({ color: col("--deep") })); roof.position.y = 1.04; roof.castShadow = true; lh.add(roof);
+          var beam = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.3, 24, 1, true), new THREE.MeshBasicMaterial({ color: col("--amber"), transparent: true, opacity: dark ? 0.32 : 0.22, side: THREE.DoubleSide, depthWrite: false }));
+          beam.geometry.translate(0, -0.65, 0); beam.rotation.z = Math.PI / 2;
+          var pivot = new THREE.Group(); pivot.position.y = 0.9; pivot.add(beam); lh.add(pivot);
+          if (!reduce) anims.push(function (s) { pivot.rotation.y = s * 0.8; });
+        }
         if (t.errands > 0) {
-          var pin = new THREE.Group(); pin.position.set(t.focus ? 0.55 : 0, 1.25, t.focus ? -0.2 : 0); g.add(pin);
-          var head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), new THREE.MeshStandardMaterial({ color: col("--amber"), roughness: 0.4 }));
-          var tip = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.35, 16), new THREE.MeshStandardMaterial({ color: col("--amber"), roughness: 0.4 }));
-          tip.rotation.x = Math.PI; tip.position.y = -0.24; head.castShadow = true; tip.castShadow = true;
-          pin.add(head); pin.add(tip);
-          var n = label(String(t.errands), tok("--ink"), tok("--amber-soft"), 128); n.position.y = 0.45; n.scale.multiplyScalar(0.9); pin.add(n);
-          var base = pin.position.y, ph = rand0(t.plz);
-          if (!reduce) anims.push(function (s) { pin.position.y = base + Math.sin(s * 2 + ph) * 0.06; });
+          var pin = new THREE.Group(); pin.position.set(cc[0] + (t.focus ? 0.45 : 0), top, -cc[1] + (t.focus ? 0.15 : 0)); pin.scale.setScalar(1.35); g.add(pin);
+          var prof = [[0, 0], [0.04, 0.1], [0.1, 0.24], [0.15, 0.38], [0.17, 0.5], [0.15, 0.62], [0.09, 0.7], [0, 0.72]].map(function (q) { return new THREE.Vector2(q[0], q[1]); });
+          var drop = new THREE.Mesh(new THREE.LatheGeometry(prof, 24), new THREE.MeshStandardMaterial({ color: col("--amber"), roughness: 0.35 }));
+          drop.castShadow = true; pin.add(drop);
+          var ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.018, 8, 32), new THREE.MeshStandardMaterial({ color: col("--amber-strong") })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.5; pin.add(ring);
+          var shadow = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.005; pin.add(shadow);
+          var badge = pinBadge(t.cat, t.errands); badge.position.y = 1.0; pin.add(badge);
+          var ph = (hash(t.plz) % 628) / 100;
+          if (!reduce) anims.push(function (s) { var y = Math.sin(s * 2 + ph) * 0.05; drop.position.y = y + 0.02; ring.position.y = 0.52 + y; badge.position.y = 1.02 + y; });
         }
         if (t.helfers > 0) {
-          var ring = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.05, 8, 40), new THREE.MeshStandardMaterial({ color: col("--teal"), emissive: col("--teal"), emissiveIntensity: dark ? 0.6 : 0.2 }));
-          ring.rotation.x = Math.PI / 2; ring.position.y = 0.25; g.add(ring);
-          var hl = label(t.helfers + (t.helfers === 1 ? " Helfer" : " Helfer"), tok("--teal-ink"), tok("--teal"), 320);
-          hl.position.set(0, 0.95, -0.55); hl.scale.multiplyScalar(0.85); g.add(hl);
-          if (!reduce) anims.push(function (s) { ring.scale.setScalar(1 + Math.sin(s * 1.6) * 0.03); });
+          var disc = new THREE.Mesh(new THREE.CircleGeometry(Math.min(0.55, 0.22 + t.helfers * 0.08), 40), new THREE.MeshBasicMaterial({ color: col("--teal"), transparent: true, opacity: dark ? 0.35 : 0.25, depthWrite: false }));
+          disc.rotation.x = -Math.PI / 2; disc.position.set(cc[0], top + 0.01, -cc[1]); g.add(disc);
+          var hb = helferBadge(t.helfers); hb.position.set(cc[0], top + 0.78, -cc[1]); g.add(hb);
+          if (!reduce) anims.push(function (s) { disc.material.opacity = (dark ? 0.3 : 0.2) + Math.sin(s * 1.5) * 0.06; });
         }
       });
-      var n = data.tiles.length, dist = n <= 1 ? 4.2 : n <= 7 ? 6.4 : 8.8;
-      camera.position.set(0, dist, dist * 0.95); controls.target.set(0, 0.3, 0); controls.update();
+
+      /* Kompass und Maßstab */
+      var north = canvasSprite(96, 120, function (g2) {
+        g2.fillStyle = tok("--deep"); g2.beginPath(); g2.moveTo(48, 8); g2.lineTo(70, 64); g2.lineTo(48, 52); g2.lineTo(26, 64); g2.closePath(); g2.fill();
+        g2.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g2.textAlign = "center"; g2.fillText("N", 48, 108);
+      }, 0.5);
+      north.position.set(0, 0.5, -6.9); root.add(north);
+      var oneKm = S, bar = new THREE.Mesh(new THREE.BoxGeometry(oneKm, 0.03, 0.06), new THREE.MeshBasicMaterial({ color: col("--deep") }));
+      bar.position.set(4.2, 0.02, 6.0); root.add(bar);
+      var kmLbl = canvasSprite(160, 64, function (g2, w, h) { g2.fillStyle = tok("--deep"); g2.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g2.textAlign = "center"; g2.textBaseline = "middle"; g2.fillText("1 km", w / 2, h / 2); }, 0.22);
+      kmLbl.position.set(4.2, 0.22, 6.0); root.add(kmLbl);
+
+      controls.target.set(0, 0, 0.4); controls.minDistance = 6; controls.maxDistance = 34;
       resize();
+      var w = el().clientWidth || 1, h = el().clientHeight || 1, vf = camera.fov * Math.PI / 180;
+      var hf = 2 * Math.atan(Math.tan(vf / 2) * (w / h)), need = 7.0 / Math.tan(Math.min(vf, hf) / 2);
+      var dir = new THREE.Vector3(0, 13.6, 9.4).normalize();
+      camera.position.copy(dir.multiplyScalar(Math.min(32, Math.max(12, need * 0.92)))); controls.update(); draw();
       return true;
     }
-    function rand0(s) { return (hash(s) % 628) / 100; }
     return {
       available: function () { return ok; },
       show: function (data, pick) {
@@ -1023,27 +1155,46 @@ textarea { min-height: 72px; resize: vertical; }
   })();
 
   function mapData() {
+    var geo = GEO.data; if (!geo) return null;
     var helferRole = state.role === "helfer";
     var focus = helferRole && state.area ? state.area.plz : null;
     if (!focus) {
       var own = state.errands.filter(function (e) { return e.clientId === state.me; })[0];
       focus = own ? own.pickupArea : state.area ? state.area.plz : "10178";
     }
-    var region = focus.slice(0, 2), tiles = {};
-    function t(plz) { return tiles[plz] || (tiles[plz] = { plz: plz, errands: 0, helfers: 0, examples: 0, focus: plz === focus, selected: plz === state.mapSel }); }
-    t(focus);
+    if (!geo[focus]) {
+      var pre = Object.keys(geo).filter(function (k) { return k.slice(0, 3) === focus.slice(0, 3); })[0] || Object.keys(geo).filter(function (k) { return k.slice(0, 2) === focus.slice(0, 2); })[0];
+      focus = pre || "10178";
+    }
+    var c = geo[focus];
+    var near = [];
+    Object.keys(geo).forEach(function (k) { var d = km(c, geo[k]); if (d < 14) near.push([k, d]); });
+    near.sort(function (a, b) { return a[1] - b[1]; });
+    var pick = near.slice(0, 24), radiusKm = Math.max(2.5, (pick[pick.length - 1] || [0, 3])[1] * 1.08);
+    var tiles = {};
+    function t(plz) {
+      if (tiles[plz]) return tiles[plz];
+      var g = geo[plz]; if (!g || km(c, g) > radiusKm) return null;
+      return (tiles[plz] = { plz: plz, lat: g[0], lng: g[1], name: g[2], errands: 0, helfers: 0, examples: 0, cat: "", focus: plz === focus, selected: plz === state.mapSel });
+    }
+    pick.forEach(function (p) { t(p[0]); });
     if (helferRole) {
-      state.errands.forEach(function (e) { if (statusOf(e) === "published" && inArea(e.pickupArea)) t(e.pickupArea).errands++; });
-    } else {
-      state.helfers.forEach(function (h) { if (h.plz && String(h.plz).slice(0, 2) === region) { var x = t(String(h.plz)); x.helfers++; if (h.example) x.examples++; } });
       state.errands.forEach(function (e) {
-        if (e.clientId === state.me && FINISHED.indexOf(statusOf(e)) < 0 && String(e.pickupArea).slice(0, 2) === region) t(e.pickupArea).errands++;
+        if (statusOf(e) === "published" && inArea(e.pickupArea)) { var x = t(e.pickupArea); if (x) { x.errands++; x.cat = x.cat || e.category; } }
+      });
+    } else {
+      state.helfers.forEach(function (h) { var x = h.plz && t(String(h.plz)); if (x) { x.helfers++; if (h.example) x.examples++; } });
+      state.errands.forEach(function (e) {
+        if (e.clientId === state.me && FINISHED.indexOf(statusOf(e)) < 0) { var x = t(e.pickupArea); if (x) { x.errands++; x.cat = x.cat || e.category; } }
       });
     }
     var list = Object.keys(tiles).map(function (k) { return tiles[k]; });
-    var f = Number(focus);
-    list.sort(function (a, b) { return (a.focus ? -1 : b.focus ? 1 : 0) || Math.abs(Number(a.plz) - f) - Math.abs(Number(b.plz) - f); });
-    return { role: state.role, tiles: list.slice(0, 19) };
+    list.sort(function (a, b) { return km(c, [a.lat, a.lng]) - km(c, [b.lat, b.lng]); });
+    return { role: state.role, center: { lat: c[0], lng: c[1] }, radiusKm: Math.round(radiusKm * 100) / 100, tiles: list };
+  }
+  function mapFallback(msg) {
+    $("map3d").innerHTML = '<p class="empty" style="margin:16px">' + esc(msg) + "</p>";
+    $("map3d").style.height = "auto";
   }
   function renderMap() {
     var on = state.view === "map";
@@ -1051,34 +1202,36 @@ textarea { min-height: 72px; resize: vertical; }
     $("v-map").setAttribute("aria-pressed", on ? "true" : "false");
     $("map-panel").hidden = !on;
     if (!on) { Map3D.hide(); return; }
+    loadGeo();
     var helferRole = state.role === "helfer";
-    var data = mapData();
     $("map-title").textContent = helferRole ? "Aufträge auf der Karte" : "Helfer in deiner Nähe";
     $("map-legend").innerHTML = helferRole
-      ? '<span><i style="background:var(--amber)"></i>offene Aufträge (Anzahl)</span><span><i style="background:var(--teal)"></i>dein Gebiet (Leuchtturm)</span>'
-      : '<span><i style="background:var(--teal)"></i>registrierte Helfer im Gebiet</span><span><i style="background:var(--amber)"></i>deine laufenden Aufträge</span>';
-    $("map-chips").innerHTML = data.tiles.map(function (t) {
+      ? '<span><i style="background:var(--amber);box-shadow:0 0 0 2px var(--amber-strong) inset"></i>offene Aufträge</span><span><i style="background:var(--amber-soft);box-shadow:0 0 0 2px var(--amber-strong) inset"></i>dein Gebiet (Leuchtturm)</span>'
+      : '<span><i style="background:var(--teal)"></i>registrierte Helfer im Gebiet</span><span><i style="background:var(--amber);box-shadow:0 0 0 2px var(--amber-strong) inset"></i>deine laufenden Aufträge</span>';
+    var data = mapData();
+    if (!data) {
+      $("map-chips").innerHTML = "";
+      $("map-sheet").textContent = GEO.failed ? "Die Kartendaten konnten nicht geladen werden." : "Karte wird geladen …";
+      if (GEO.failed) mapFallback("Die Kartendaten konnten nicht geladen werden. Bitte später erneut versuchen.");
+      return;
+    }
+    var shownTiles = data.tiles.filter(function (t) { return t.focus || t.errands || t.helfers || t.selected; });
+    $("map-chips").innerHTML = shownTiles.map(function (t) {
       var n = helferRole ? t.errands : t.helfers;
-      return '<button type="button" data-plz="' + esc(t.plz) + '" aria-pressed="' + (t.plz === state.mapSel) + '">' + esc(t.plz) + "<small>" + (helferRole ? n + (n === 1 ? " Auftrag" : " Aufträge") : n + " Helfer") + "</small></button>";
+      return '<button type="button" data-plz="' + esc(t.plz) + '" aria-pressed="' + (t.plz === state.mapSel) + '">' + esc(t.plz) + " " + esc(shortName(t.name)) + "<small>" + (helferRole ? n + (n === 1 ? " Auftrag" : " Aufträge") : n + " Helfer") + "</small></button>";
     }).join("");
     var sel = data.tiles.filter(function (t) { return t.plz === state.mapSel; })[0];
+    var where = function (t) { return t.plz + (t.name ? " " + shortName(t.name) : ""); };
     var sheet;
     if (helferRole && !state.area) sheet = "Speichere unten dein Gebiet, dann erscheinen die Aufträge auf der Karte.";
     else if (sel) sheet = helferRole
-      ? (sel.errands ? sel.errands + (sel.errands === 1 ? " offener Auftrag" : " offene Aufträge") + " in " + sel.plz + ". Die Liste unten zeigt nur dieses Gebiet." : "In " + sel.plz + " gibt es gerade keine offenen Aufträge.")
-      : sel.helfers + " registrierte Helfer in " + sel.plz + (sel.examples ? " (davon " + sel.examples + " Beispiel)" : "") + ". Genaue Standorte zeigt FARO nie an.";
-    else sheet = helferRole ? "Tippe auf ein Gebiet, um nur dessen Aufträge zu sehen." : "Tippe auf ein Gebiet. FARO zeigt nur, wie viele Helfer dort registriert sind, nie wo sie gerade sind.";
+      ? (sel.errands ? sel.errands + (sel.errands === 1 ? " offener Auftrag" : " offene Aufträge") + " in " + where(sel) + ". Die Liste unten zeigt nur dieses Gebiet." : "In " + where(sel) + " gibt es gerade keine offenen Aufträge.")
+      : sel.helfers + " registrierte Helfer in " + where(sel) + (sel.examples ? " (davon " + sel.examples + " Beispiel)" : "") + ". Genaue Standorte zeigt FARO nie an.";
+    else sheet = (helferRole ? "Tippe auf ein Gebiet, um nur dessen Aufträge zu sehen." : "Tippe auf ein Gebiet. FARO zeigt nur, wie viele Helfer dort registriert sind, nie wo sie gerade sind.") +
+      " Umkreis ca. " + Math.round(data.radiusKm) + " km um " + where(data.tiles.filter(function (t) { return t.focus; })[0] || data.tiles[0]) + ".";
     $("map-sheet").textContent = sheet;
-    if (!Map3D.available()) {
-      $("map3d").innerHTML = '<p class="empty" style="margin:16px">Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten.</p>';
-      $("map3d").style.height = "auto";
-      return;
-    }
-    var shown = Map3D.show(data, function (plz) { state.mapSel = state.mapSel === plz ? null : plz; render(); });
-    if (!shown) {
-      $("map3d").innerHTML = '<p class="empty" style="margin:16px">Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten.</p>';
-      $("map3d").style.height = "auto";
-    }
+    if (!Map3D.available()) { mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten."); return; }
+    if (!Map3D.show(data, function (plz) { state.mapSel = state.mapSel === plz ? null : plz; render(); })) mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten.");
   }
 
   function errorText(e) {

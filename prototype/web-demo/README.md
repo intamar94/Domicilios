@@ -10,7 +10,14 @@ Prototipo clicable, en alemán, del flujo del Cliente (00.2) y del Helfer (00.3)
   - Cada persona elige su nombre visible. Cliente y Helfer se ven el nombre y tienen un chat del mandado (con respuestas rápidas) mientras está en curso.
   - El formulario se adapta a la categoría (etiquetas, código, tamaño, texto de «ya pagado»). Pide día y hora con al menos 30 minutos de margen, y el mandado caduca solo si nadie lo acepta a tiempo.
   - Los mandados de ejemplo enseñan su PIN al Helfer y se confirman solos al entregarlos.
-- **Mapa 3D (botón «Karte 3D»):** barrios en hexágono por código postal, con estilo de maqueta tipo Blender (three.js r128 desde cdnjs, OrbitControls desde jsDelivr). El Helfer ve chinchetas ámbar con el número de mandados abiertos y el faro marca su zona; al tocar un barrio, la lista se filtra. El Cliente ve cuántos Helfer hay **registrados** en cada barrio (colección `helfers`, sin nombre). **Nunca se muestran posiciones exactas ni quién está conectado** (decisión de Intamar, 14/10/2026: zonas aproximadas, por DSGVO y H2). Sin WebGL, quedan los chips de barrios como alternativa accesible.
+- **Mapa 3D (botón «Karte 3D»):** maqueta circular de unos 4–14 km alrededor de tu zona. Cada barrio está **en su posición geográfica real** (centro del código postal, ver `DATA-NOTICE.md`) y su forma se calcula a partir de los centros vecinos (Voronoi con d3-delaunay), así que se parece a la realidad pero no es el contorno oficial. Lleva flecha de norte, escala de 1 km y el nombre del barrio.
+  - Helfer: chinchetas ámbar con el icono de la categoría y el número de mandados.
+  - Cliente: cuántos Helfer hay **registrados** por barrio (colección `helfers`, sin nombre).
+  - El faro marca tu zona. Las casas y los árboles son decorativos.
+  - **Nunca se muestran posiciones exactas ni quién está conectado** (decisión de Intamar, 14/10/2026). El GPS solo será posible en la app real.
+  - Sin WebGL, quedan los chips de barrios como alternativa accesible.
+  - Librerías: three.js r128 (cdnjs), OrbitControls y d3-delaunay 6.0.4 (jsDelivr).
+- **Colores:** según 06.1 (un solo botón ámbar por pantalla; borde `--amber-strong` en gráficos ámbar).
 - **Qué no hace (a propósito):** pagos reales (H3), registro, fotos de evidencia, mapa real de calles (la página no puede cargar imágenes externas), avisos, incidencias de entrega ni reclamaciones.
 - **Limitación de privacidad:** en el prototipo todos los datos del mandado (incluido el PIN) están en un documento compartido. En la app real, las direcciones exactas y los códigos van en tablas separadas protegidas con RLS (00.5).
 - **Para probarlo a solas:** se pueden aceptar los propios mandados desde «Ich helfe».
