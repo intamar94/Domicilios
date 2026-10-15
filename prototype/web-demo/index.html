@@ -158,6 +158,11 @@ textarea { min-height: 72px; resize: vertical; }
 .pinrow { display: flex; gap: 8px; flex-wrap: wrap; }
 .pinrow input { width: 8rem; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
 .inline { display: flex; gap: 8px; }
+.shop { margin: 0; padding-left: 1.1em; }
+.vcard { display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px; background: var(--deep); color: var(--bg); font-variant-numeric: tabular-nums; }
+.vcard span { font-size: 0.8rem; opacity: 0.85; }
+.vcard strong { font-family: var(--display); font-size: 1.4rem; letter-spacing: 0.12em; }
+.vcard small { font-size: 0.8rem; opacity: 0.85; }
 .inline input { flex: 1; min-width: 0; }
 
 /* Chat */
@@ -317,6 +322,24 @@ body.nomap .grab { display: none; }
           <label for="f-desc">Beschreibung <span class="hint">(optional)</span></label>
           <textarea id="f-desc" maxlength="300" placeholder="z. B. Abholung an der Info-Theke im Erdgeschoss"></textarea>
         </div>
+        <div class="field" id="field-list" hidden>
+          <label for="f-list">Einkaufsliste</label>
+          <textarea id="f-list" maxlength="600" placeholder="Eine Sache pro Zeile, z. B.&#10;2 Bio-Bananen&#10;1 Vollkornbrot&#10;Hustenbonbons (ohne Medikamente)"></textarea>
+          <span class="hint">Schreib einfach auf, was du brauchst. Gründe musst du nicht angeben.</span>
+        </div>
+        <div class="field" id="field-budget" hidden>
+          <label for="f-budget">Mein Limit für den Einkauf (€)</label>
+          <input type="text" id="f-budget" inputmode="decimal" value="30">
+          <span class="hint">Höchstens 50 €. Bezahlt wird nur der Betrag auf dem Kassenbon.</span>
+        </div>
+        <div class="field" id="field-subst" hidden>
+          <span class="legend" id="l-subst">Wenn etwas fehlt</span>
+          <div class="sizes" role="radiogroup" aria-labelledby="l-subst">
+            <label><input type="radio" name="subst" value="none"><strong>Kein Ersatz</strong><span>einfach weglassen</span></label>
+            <label><input type="radio" name="subst" value="similar" checked><strong>Ähnliches</strong><span>ist okay</span></label>
+            <label><input type="radio" name="subst" value="ask"><strong>Frag mich</strong><span>im Chat</span></label>
+          </div>
+        </div>
         <label class="check"><input type="checkbox" id="f-paid"> <span id="t-paid">Alles ist bereits bezahlt.</span></label>
         <label class="check"><input type="checkbox" id="f-allowed"> Keine verbotenen Artikel (Medikamente, Alkohol, Tabak, Bargeld, Ausweise, Gefahrgut).</label>
         <div class="price" id="f-price" aria-live="polite"></div>
@@ -381,7 +404,12 @@ body.nomap .grab { display: none; }
 (function () {
   "use strict";
 
+  var BUDGET_MAX = 5000;
   var CATS = {
+    purchase_errand: { de: "Einkaufen", hint: "Jemand aus der Nachbarschaft kauft für dich ein: Supermarkt, Bäckerei, Drogerie. Bezahlt wird mit einer Einmal-Karte mit deinem Limit (im Prototyp simuliert).",
+      from: "Geschäft", fromPh: "z. B. Lidl, Musterstraße 1 oder deine Bäckerei", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
+      code: null, sizes: true, proof: "pin", purchase: true,
+      paid: "Ich zahle den Betrag laut Kassenbon bis zu meinem Limit. Das Geschäft nimmt Kartenzahlung." },
     pickup_click_collect: { de: "Click & Collect abholen", hint: "Bezahlte Bestellung im Geschäft abholen und zu dir bringen.",
       from: "Geschäft", fromPh: "Name und Adresse des Geschäfts", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
       code: "Bestell- oder Abholnummer", codePh: "z. B. 4711-2290", sizes: true, proof: "pin",
@@ -422,10 +450,13 @@ body.nomap .grab { display: none; }
     not_feasible: { de: "Nicht durchführbar", tone: "bad", step: 0 }
   };
   var STEP_TEXT = ["", "Wartet auf einen Helfer", "Helfer ist unterwegs zur Abholung", "Abgeholt, auf dem Weg", "Zugestellt, bitte bestätigen", "Erledigt"];
+  var SUBST = { none: "Kein Ersatz", similar: "Ähnliches ist okay", ask: "Frag mich im Chat" };
+  function centsFromInput(v) { var n = Number(String(v || "").replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(n) ? Math.round(n * 100) : NaN; }
   var REASONS = {
     payment_required: "An der Kasse sollte noch gezahlt werden",
     not_ready: "Bestellung war nicht abholbereit",
     prohibited_item: "Verbotener Artikel",
+    card_declined: "Karte abgelehnt oder nur Barzahlung",
     other: "Anderer Grund"
   };
   var CHAT_STATES = ["accepted", "picked_up", "delivered"];
@@ -438,7 +469,7 @@ body.nomap .grab { display: none; }
 
   var state = {
     role: "kunde", me: null, name: "", errands: [], loaded: false,
-    confirm: null, pinDraft: {}, nfReason: {}, busy: {},
+    confirm: null, pinDraft: {}, receiptDraft: {}, nfReason: {}, busy: {},
     chatOpen: {}, chatUnsub: {}, msgs: {}, chatDraft: {},
     area: null, showDone: false, expiring: {}, formOpened: false,
     view: "map", mapSel: null, helfers: [], mapFocus: null
@@ -618,6 +649,7 @@ body.nomap .grab { display: none; }
       sizes.appendChild(l);
     });
     sel.addEventListener("change", updateFormInfo);
+    $("f-budget").addEventListener("input", updateFormInfo);
     sizes.addEventListener("change", updateFormInfo);
     updateFormInfo();
     $("btn-new").addEventListener("click", function () { setFormOpen($("form-new").hidden); });
@@ -639,12 +671,15 @@ body.nomap .grab { display: none; }
     $("field-code").hidden = !c.code;
     if (c.code) { $("l-code").textContent = c.code; $("f-code").placeholder = c.codePh; }
     $("field-size").hidden = !c.sizes;
+    ["field-list", "field-budget", "field-subst"].forEach(function (id) { $(id).hidden = !c.purchase; });
     $("t-paid").textContent = c.paid;
     var r = SIZES[currentSize()].reward;
+    var b = c.purchase ? centsFromInput($("f-budget").value) : 0;
     $("f-price").innerHTML =
+      (c.purchase ? "<div><span>Einkauf (höchstens, laut Kassenbon)</span><span>" + (isFinite(b) && b > 0 ? euro(b) : "–") + "</span></div>" : "") +
       "<div><span>Vergütung für den Helfer</span><span>" + euro(r) + "</span></div>" +
       "<div><span>FARO-Servicegebühr</span><span>" + euro(FEE) + "</span></div>" +
-      '<div class="total"><span>Gesamt (Beispielpreis)</span><span>' + euro(r + FEE) + "</span></div>";
+      '<div class="total"><span>' + (c.purchase ? "Gesamt höchstens (Beispielpreis)" : "Gesamt (Beispielpreis)") + "</span><span>" + euro(r + FEE + (c.purchase && isFinite(b) ? b : 0)) + "</span></div>";
   }
   function setFormOpen(open, noFocus) {
     $("form-new").hidden = !open;
@@ -662,6 +697,8 @@ body.nomap .grab { display: none; }
     $("f-to-plz").value = e.dropArea || "";
     $("f-to-addr").value = e.dropAddress || "";
     $("f-desc").value = e.description || "";
+    $("f-list").value = e.shoppingList || "";
+    if (e.budget) $("f-budget").value = String(e.budget / 100).replace(".", ",");
     var s = $("f-size-" + (e.size || "M")); if (s) s.checked = true;
     $("f-day").value = "0";
     $("f-paid").checked = false; $("f-allowed").checked = false;
@@ -693,6 +730,11 @@ body.nomap .grab { display: none; }
     if (!addrB) problems.push("Adresse bei „" + c.to + "“ fehlt.");
     if (!deadline) problems.push("Bitte eine Uhrzeit angeben.");
     else if (deadline < Date.now() + 30 * 60000) problems.push("Die Zeit ist zu knapp oder schon vorbei. Bitte mindestens 30 Minuten ab jetzt wählen.");
+    var budget = c.purchase ? centsFromInput($("f-budget").value) : 0;
+    if (c.purchase) {
+      if (!$("f-list").value.trim()) problems.push("Bitte schreib auf, was eingekauft werden soll.");
+      if (!isFinite(budget) || budget < 500 || budget > BUDGET_MAX) problems.push("Das Limit muss zwischen 5 € und 50 € liegen.");
+    }
     if (!$("f-paid").checked) problems.push("Bitte bestätigen: " + c.paid);
     if (!$("f-allowed").checked) problems.push("Bitte bestätigen, dass keine verbotenen Artikel dabei sind.");
     if (problems.length) {
@@ -717,6 +759,10 @@ body.nomap .grab { display: none; }
       description: $("f-desc").value.trim().slice(0, 300),
       reward: SIZES[size].reward,
       fee: FEE,
+      shoppingList: c.purchase ? $("f-list").value.trim().slice(0, 600) : "",
+      budget: c.purchase ? budget : 0,
+      substitution: c.purchase ? ((document.querySelector('input[name="subst"]:checked') || {}).value || "similar") : "",
+      receipt: null,
       status: "published",
       clientId: state.me,
       clientName: state.name,
@@ -774,6 +820,20 @@ body.nomap .grab { display: none; }
       '</div><div class="inline"><input type="text" id="chat-' + role + "-" + esc(e.id) + '" data-chat="' + esc(e.id) + '" maxlength="300" placeholder="Nachricht an ' + esc(other) + '" aria-label="Nachricht an ' + esc(other) + '" value="' + esc(state.chatDraft[e.id] || "") + '"><button type="button" class="btn primary" data-act="send" data-id="' + esc(e.id) + '">Senden</button></div></div>';
   }
 
+  function purchaseBlock(e, role) {
+    if (!e.shoppingList) return "";
+    var items = e.shoppingList.split(/\n+/).filter(Boolean).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
+    var line = e.receipt != null
+      ? "Kassenbon: <b>" + euro(e.receipt) + "</b>" + (e.budget > e.receipt ? " · nicht genutzt und nicht belastet: " + euro(e.budget - e.receipt) : "")
+      : "Limit: <b>" + euro(e.budget || 0) + "</b> · " + esc(SUBST[e.substitution] || "");
+    return '<div class="detail"><dt>Einkaufsliste</dt><dd><ul class="shop">' + items + "</ul></dd><dt>Bezahlung</dt><dd>" + line + "</dd></div>";
+  }
+  function cardBox(e) {
+    var last = String((hash32(e.id) % 9000) + 1000);
+    return '<div class="vcard" aria-label="Einmal-Karte, simuliert"><span>Einmal-Karte (simuliert)</span><strong>•••• ' + last + "</strong><small>Limit " + euro(e.budget || 0) + " · nur für diesen Einkauf · verfällt danach</small></div>";
+  }
+  function hash32(str) { var h = 2166136261; str = String(str); for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function totalFor(e) { return (e.reward || 0) + (e.fee || 0) + (e.receipt != null ? e.receipt : (e.budget || 0)); }
   function kundeCard(e) {
     var st = statusOf(e);
     var acts = "";
@@ -791,10 +851,10 @@ body.nomap .grab { display: none; }
       : "";
     var nf = st === "not_feasible" ? '<p class="desc">Grund: ' + esc(REASONS[e.notFeasibleReason] || "–") + "</p>" : "";
     var exp = st === "expired" ? '<p class="desc">Niemand hat den Auftrag rechtzeitig angenommen.</p>' : "";
-    return '<article class="card">' + head(e) + route(e) + steps(st) + helfer + pin + nf + exp +
+    return '<article class="card">' + head(e) + route(e) + steps(st) + helfer + pin + nf + exp + purchaseBlock(e, "kunde") +
       (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
       chatBlock(e, "kunde") +
-      '<footer><p class="money">' + euro((e.reward || 0) + (e.fee || 0)) + "<small>Gesamt, Beispielpreis</small></p>" + (acts ? '<div class="actions">' + acts + "</div>" : "") + "</footer></article>";
+      '<footer><p class="money">' + euro(totalFor(e)) + "<small>" + (e.shoppingList && e.receipt == null ? "Gesamt höchstens, Beispielpreis" : "Gesamt, Beispielpreis") + "</small></p>" + (acts ? '<div class="actions">' + acts + "</div>" : "") + "</footer></article>";
   }
 
   function helferLabel(l) { return l === "Zu dir" ? "Bringen zu" : l === "Bei dir abholen" ? "Abholen beim Kunden" : l; }
@@ -813,6 +873,11 @@ body.nomap .grab { display: none; }
         acts = '<div class="confirm"><label for="nf-' + esc(e.id) + '"><b>Warum nicht durchführbar?</b></label><select id="nf-' + esc(e.id) + '" data-nf="' + esc(e.id) + '">' + opts + '</select><p class="note">Du zahlst niemals etwas aus. Der Auftrag wird beendet, ohne Nachteile für dich.</p><div class="actions"><button type="button" class="btn danger" data-act="nf-yes" data-id="' + esc(e.id) + '">Melden</button><button type="button" class="btn ghost" data-act="confirm-no">Zurück</button></div></div>';
       } else if (isConfirm(e.id, "release")) {
         acts = confirmBox(e.id, "release", "Auftrag freigeben? Ohne Nachteile für dich. Er geht zurück in die Liste.", "Freigeben", "");
+      } else if (c.purchase) {
+        var rv = state.receiptDraft[e.id] || "";
+        acts = cardBox(e) + '<div class="confirm"><label for="rc-' + esc(e.id) + '"><b>Betrag laut Kassenbon (€)</b></label><div class="pinrow"><input type="text" id="rc-' + esc(e.id) + '" data-receipt="' + esc(e.id) + '" inputmode="decimal" value="' + esc(rv) + '"><button type="button" class="btn primary" data-act="paid" data-id="' + esc(e.id) + '">Bezahlt, Bon fotografiert</button></div><p class="note">Im Prototyp ersetzt die Bestätigung das Foto. Du zahlst nie mit deinem eigenen Geld.</p></div>' +
+          '<button type="button" class="btn" data-act="nf" data-id="' + esc(e.id) + '">Nicht durchführbar</button>' +
+          '<button type="button" class="btn ghost" data-act="release" data-id="' + esc(e.id) + '">Freigeben</button>';
       } else {
         acts = '<button type="button" class="btn primary" data-act="pickup" data-id="' + esc(e.id) + '">Abgeholt</button>' +
           '<button type="button" class="btn" data-act="nf" data-id="' + esc(e.id) + '">Nicht durchführbar</button>' +
@@ -830,7 +895,7 @@ body.nomap .grab { display: none; }
       acts = '<p class="note">Wartet auf die Bestätigung von ' + esc(e.clientName || "Kunde") + ".</p>";
     }
     var client = e.clientName ? '<p class="person">Kunde: <b>' + esc(e.clientName) + "</b></p>" : "";
-    return '<article class="card">' + head(e) + route(e) + client + detail + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+    return '<article class="card">' + head(e) + route(e) + client + detail + purchaseBlock(e, "helfer") + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
       chatBlock(e, "helfer") +
       '<footer><p class="money">' + euro(e.reward || 0) + "<small>deine Vergütung</small></p></footer>" +
       (acts ? '<div class="actions">' + acts + "</div>" : "") + "</article>";
@@ -839,7 +904,7 @@ body.nomap .grab { display: none; }
   function marketCard(e) {
     var own = e.clientId === state.me;
     return '<article class="card">' + head(e, own ? '<span class="tag">Dein eigener Auftrag</span>' : "") +
-      route(e) + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      route(e) + (e.shoppingList ? '<p class="desc">Einkauf bis ' + euro(e.budget || 0) + " · " + e.shoppingList.split(/\n+/).filter(Boolean).length + " Positionen · Einmal-Karte</p>" : "") + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
       '<footer><p class="money">' + euro(e.reward || 0) + '<small>Vergütung</small></p><button type="button" class="btn accent" data-act="accept" data-id="' + esc(e.id) + '"' + (state.busy[e.id] ? " disabled" : "") + ">Annehmen</button></footer></article>";
   }
 
@@ -955,6 +1020,9 @@ body.nomap .grab { display: none; }
       } else if (cat === "task_documents") {
         g.strokeRect(cx - s * 0.4, cy - s * 0.26, s * 0.8, s * 0.52);
         g.beginPath(); g.moveTo(cx - s * 0.4, cy - s * 0.26); g.lineTo(cx, cy + s * 0.06); g.lineTo(cx + s * 0.4, cy - s * 0.26); g.stroke();
+      } else if (cat === "purchase_errand") {
+        g.beginPath(); g.moveTo(cx - s * 0.42, cy - s * 0.32); g.lineTo(cx - s * 0.3, cy - s * 0.32); g.lineTo(cx - s * 0.18, cy + s * 0.18); g.lineTo(cx + s * 0.32, cy + s * 0.18); g.lineTo(cx + s * 0.4, cy - s * 0.16); g.lineTo(cx - s * 0.24, cy - s * 0.16); g.stroke();
+        g.beginPath(); g.arc(cx - s * 0.12, cy + s * 0.34, s * 0.07, 0, Math.PI * 2); g.arc(cx + s * 0.26, cy + s * 0.34, s * 0.07, 0, Math.PI * 2); g.fill();
       } else if (cat === "person") {
         g.beginPath(); g.arc(cx, cy - s * 0.18, s * 0.17, 0, Math.PI * 2); g.fill();
         g.beginPath(); g.moveTo(cx - s * 0.32, cy + s * 0.38); g.quadraticCurveTo(cx - s * 0.3, cy + s * 0.02, cx, cy + s * 0.02); g.quadraticCurveTo(cx + s * 0.3, cy + s * 0.02, cx + s * 0.32, cy + s * 0.38); g.closePath(); g.fill();
@@ -1403,10 +1471,10 @@ body.nomap .grab { display: none; }
       task_repair_service: '<path d="M14 6a4 4 0 0 0 5 5l-8 8-3-3 8-8a4 4 0 0 0-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
       purchase_errand: '<circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/><path d="M3 4h2l2.5 11h11L21 8H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
     };
-    var SHORT = { pickup_click_collect: "Click & Collect", task_parcel_return: "Retoure", task_parcel_pickup: "Paket abholen", task_key_handover: "Schlüssel", task_documents: "Dokumente", task_repair_service: "Reparatur" };
+    var SHORT = { purchase_errand: "Einkaufen", pickup_click_collect: "Click & Collect", task_parcel_return: "Retoure", task_parcel_pickup: "Paket abholen", task_key_handover: "Schlüssel", task_documents: "Dokumente", task_repair_service: "Reparatur" };
     var html = Object.keys(CATS).map(function (k) {
       return '<button type="button" class="tile" data-cat="' + k + '"><i><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--deep)">' + ICON[k] + "</svg></i>" + esc(SHORT[k]) + "</button>";
-    }).join("") + '<button type="button" class="tile" disabled title="Kommt bald: Einkaufen mit Einmal-Karte"><i><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">' + ICON.purchase_errand + "</svg></i>Einkaufen (bald)</button>";
+    }).join("");
     $("cat-tiles").innerHTML = html;
     $("cat-tiles").addEventListener("click", function (ev) {
       var b = ev.target.closest("button[data-cat]"); if (!b) return;
@@ -1441,6 +1509,15 @@ body.nomap .grab { display: none; }
         break;
       case "nf-yes":
         if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "not_feasible", notFeasibleReason: state.nfReason[id] || "other" }, "Gemeldet. Danke, dass du nichts ausgelegt hast.");
+        break;
+      case "paid":
+        if (e.helferId === state.me && e.status === "accepted" && e.shoppingList) {
+          var cents = centsFromInput(state.receiptDraft[id]);
+          if (!isFinite(cents) || cents <= 0) { toast("Bitte den Betrag vom Kassenbon eingeben."); break; }
+          if (cents > (e.budget || 0)) { toast("Über dem Limit: Die Einmal-Karte würde ablehnen. Frag im Chat, was weg kann."); break; }
+          delete state.receiptDraft[id];
+          patch(id, { status: "picked_up", receipt: cents, pickedUpAt: Date.now() }, "Bezahlt mit der Einmal-Karte: " + euro(cents) + ". Jetzt zur Kundin oder zum Kunden.");
+        }
         break;
       case "pickup":
         if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "picked_up", pickedUpAt: Date.now() }, "Abgeholt. Jetzt zum Ziel.");
@@ -1486,6 +1563,7 @@ body.nomap .grab { display: none; }
     if (!t.getAttribute) return;
     if (t.getAttribute("data-pin")) { t.value = t.value.replace(/\D/g, "").slice(0, 4); state.pinDraft[t.getAttribute("data-pin")] = t.value; }
     if (t.getAttribute("data-chat")) state.chatDraft[t.getAttribute("data-chat")] = t.value;
+    if (t.getAttribute("data-receipt")) { t.value = t.value.replace(/[^0-9.,]/g, "").slice(0, 7); state.receiptDraft[t.getAttribute("data-receipt")] = t.value; }
     if (t.id === "f-from-plz" || t.id === "f-to-plz" || t.id === "a-plz" || t.id === "m-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
   });
   document.addEventListener("keydown", function (ev) {
