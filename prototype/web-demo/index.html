@@ -179,13 +179,48 @@ textarea { min-height: 72px; resize: vertical; }
 }
 .toast p { background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; max-width: 520px; font-weight: 700; }
 .foot { font-size: 0.8rem; color: var(--muted); text-align: center; }
+/* Uber-Stil: Vollbild-Karte, schwebende Leiste oben, ziehbares Blatt unten */
+html, body { height: 100%; }
+body { overflow: hidden; }
+.mapfull { position: fixed; inset: 0; z-index: 0; }
+.topbar { position: fixed; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.brandchip { display: flex; align-items: center; gap: 8px; background: var(--surface); color: var(--deep); border-radius: 999px; padding: 6px 12px 6px 8px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16); font-family: var(--display); font-size: 1.1rem; letter-spacing: 0.04em; }
+.brandchip .proto { font-family: var(--body); font-size: 0.65rem; padding: 2px 6px; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--deep); color: var(--bg); font-weight: 700; font-size: 0.95rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16); cursor: pointer; }
+.locchip { position: fixed; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 64px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; max-width: calc(100% - 32px); min-height: 40px; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.sheet { position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 600px; height: 50vh; height: 50dvh; display: flex; flex-direction: column; background: var(--bg); border-radius: 22px 22px 0 0; box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18); }
+.sheet[data-state="full"] { height: calc(100vh - 56px - env(safe-area-inset-top, 0px)); height: calc(100dvh - 56px - env(safe-area-inset-top, 0px)); }
+@media (prefers-reduced-motion: no-preference) { .sheet { transition: height 0.28s ease; } .sheet.dragging { transition: none; } }
+.grab { display: flex; justify-content: center; padding: 10px 0 8px; cursor: grab; touch-action: none; flex: none; }
+.grab span { width: 44px; height: 5px; border-radius: 3px; background: var(--line); }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding-top: 2px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet .roles button { min-height: 44px; }
+.sheet[data-role="helfer"] #map-panel { order: 1; }
+.sheet[data-role="helfer"] #view-helfer { order: 2; }
+.sheet[data-role="kunde"] #view-kunde { order: 1; }
+.sheet[data-role="kunde"] #map-panel { order: 2; }
+.sheet .foot { order: 9; }
+.sheet .roles, .sheet #banner, .sheet #profile { order: 0; }
+.askbar { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 0 18px; border: 0; border-radius: 14px; background: var(--deep-soft); color: var(--ink); font-family: var(--display); font-weight: 800; font-size: 1.2rem; text-align: left; cursor: pointer; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { display: grid; justify-items: center; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.2; }
+.tile i { display: grid; place-items: center; width: 100%; aspect-ratio: 1; max-width: 72px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.tile:disabled { cursor: default; color: var(--muted); }
+.tile:disabled i { opacity: 0.6; }
+.mapinfo h2 { font-size: 1.1rem; }
+body.nomap { overflow: auto; }
+body.nomap .mapfull, body.nomap .locchip { display: none; }
+body.nomap .topbar { position: static; padding: 12px 16px 0; }
+body.nomap .sheet { position: static; height: auto; box-shadow: none; border-radius: 0; }
+body.nomap .grab { display: none; }
 
 /* Ansicht: Liste oder 3D-Karte */
 .seg { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; justify-self: start; }
 .seg button { border: 0; background: transparent; border-radius: 9px; padding: 8px 14px; min-height: 40px; font-weight: 700; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--deep); color: var(--bg); }
 .mappanel { padding: 0; overflow: hidden; gap: 0; }
-.map3d { position: relative; height: 380px; background: var(--surface-2); touch-action: none; }
+.map3d { background: var(--surface-2); touch-action: none; }
 .map3d canvas { display: block; width: 100%; height: 100%; }
 .map3d .maphint { position: absolute; left: 10px; bottom: 10px; font-size: 0.8rem; background: var(--surface); color: var(--muted); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); pointer-events: none; }
 .mapbody { display: grid; gap: 10px; padding: 12px 14px 14px; }
@@ -197,47 +232,107 @@ textarea { min-height: 72px; resize: vertical; }
 .chips button small { font-weight: 400; margin-left: 4px; }
 </style>
 
-<div class="wrap">
-  <div class="top">
-    <div class="brand">
-      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
-        <path d="M17 6 L33 1 L33 11 Z" fill="var(--amber)" opacity="0.85"/>
-        <rect x="12" y="8" width="10" height="22" rx="2" fill="var(--teal)"/>
-        <rect x="10" y="28" width="14" height="4" rx="1" fill="var(--deep)"/>
-        <circle cx="17" cy="9" r="3.5" fill="var(--amber)"/>
-      </svg>
-      <div><h1>FARO</h1><small>Erledigungen aus der Nachbarschaft</small></div>
-    </div>
-    <span class="proto">Prototyp</span>
-  </div>
+<div class="map3d mapfull" id="map3d" aria-hidden="true"></div>
 
+<header class="topbar">
+  <div class="brandchip">
+    <svg width="26" height="26" viewBox="0 0 34 34" aria-hidden="true">
+      <path d="M17 6 L33 1 L33 11 Z" fill="var(--amber)" opacity="0.85"/>
+      <rect x="12" y="8" width="10" height="22" rx="2" fill="var(--teal)"/>
+      <rect x="10" y="28" width="14" height="4" rx="1" fill="var(--deep)"/>
+      <circle cx="17" cy="9" r="3.5" fill="var(--amber)"/>
+    </svg>
+    <b>FARO</b><span class="proto">Prototyp</span>
+  </div>
+  <button type="button" class="avatar" id="btn-profile" aria-label="Profil öffnen">?</button>
+</header>
+<button type="button" class="locchip" id="loc-chip" aria-controls="map-focus-form"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.4 7-12a7 7 0 1 0-14 0c0 5.6 7 12 7 12z" fill="var(--amber)" stroke="var(--amber-strong)" stroke-width="1.5"/><circle cx="12" cy="10" r="2.6" fill="var(--surface)"/></svg><span id="loc-text">Gebiet wählen</span></button>
+
+<section class="sheet" id="sheet" data-state="peek" data-role="kunde" aria-label="Aufträge">
+  <div class="grab" id="grab" role="button" tabindex="0" aria-label="Bereich vergrößern" aria-expanded="false"><span></span></div>
+  <div class="sheet-body" id="sheet-body">
+    <div class="roles" role="group" aria-label="Rolle wählen">
+      <button type="button" id="role-kunde" aria-pressed="true">Ich brauche Hilfe</button>
+      <button type="button" id="role-helfer" aria-pressed="false">Ich helfe</button>
+    </div>
+    <p class="banner" id="banner" hidden></p>
   <div class="card" id="profile">
-    <div class="field" id="profile-edit">
-      <label for="p-name">Wie sollen andere dich sehen?</label>
-      <div class="inline">
-        <input type="text" id="p-name" maxlength="24" placeholder="z. B. Ana M." autocomplete="given-name">
-        <button type="button" class="btn primary" id="p-save">Speichern</button>
+      <div class="field" id="profile-edit">
+        <label for="p-name">Wie sollen andere dich sehen?</label>
+        <div class="inline">
+          <input type="text" id="p-name" maxlength="24" placeholder="z. B. Ana M." autocomplete="given-name">
+          <button type="button" class="btn primary" id="p-save">Speichern</button>
+        </div>
+        <span class="hint">Vorname und Anfangsbuchstabe reichen.</span>
       </div>
-      <span class="hint">Vorname und Anfangsbuchstabe reichen.</span>
+      <p class="who" id="profile-show" hidden></p>
     </div>
-    <p class="who" id="profile-show" hidden></p>
-  </div>
 
-  <div class="roles" role="group" aria-label="Rolle wählen">
-    <button type="button" id="role-kunde" aria-pressed="true">Ich brauche Hilfe<span>Auftrag aufgeben</span></button>
-    <button type="button" id="role-helfer" aria-pressed="false">Ich helfe<span>Aufträge annehmen</span></button>
-  </div>
 
-  <p class="banner" id="banner" hidden></p>
+    <section id="view-kunde" class="stack" aria-labelledby="h-kunde">
+      <button type="button" class="askbar" id="btn-new" aria-expanded="false" aria-controls="form-new">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <span>Was soll erledigt werden?</span>
+      </button>
+      <div class="tiles" id="cat-tiles" role="group" aria-label="Schnell auswählen"></div>
+      <form id="form-new" class="card" hidden novalidate>
+        <h3>Was soll erledigt werden?</h3>
+        <div class="field">
+          <label for="f-cat">Kategorie</label>
+          <select id="f-cat" required></select>
+          <span class="hint" id="f-cat-hint"></span>
+        </div>
+        <div class="field">
+          <span class="legend" id="l-from">Abholung</span>
+          <div class="row2">
+            <input type="text" id="f-from-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Abholung" required>
+            <input type="text" id="f-from-addr" aria-labelledby="l-from" required>
+          </div>
+        </div>
+        <div class="field" id="field-code">
+          <label for="f-code"><span id="l-code">Abholnummer</span> <span class="hint">(optional)</span></label>
+          <input type="text" id="f-code">
+          <span class="hint">Sieht der Helfer erst nach der Annahme.</span>
+        </div>
+        <div class="field">
+          <span class="legend" id="l-to">Bringen zu</span>
+          <div class="row2">
+            <input type="text" id="f-to-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Ziel" required>
+            <input type="text" id="f-to-addr" aria-labelledby="l-to" required>
+          </div>
+        </div>
+        <div class="field">
+          <span class="legend" id="l-when">Erledigt bis</span>
+          <div class="row2">
+            <select id="f-day" aria-label="Tag"><option value="0">Heute</option><option value="1">Morgen</option></select>
+            <input type="time" id="f-until" value="18:00" aria-label="Uhrzeit" required>
+          </div>
+          <span class="hint">Mindestens 30 Minuten ab jetzt. Danach läuft der Auftrag automatisch ab.</span>
+        </div>
+        <div class="field" id="field-size">
+          <span class="legend" id="l-size">Größe</span>
+          <div class="sizes" role="radiogroup" aria-labelledby="l-size" id="f-sizes"></div>
+        </div>
+        <div class="field">
+          <label for="f-desc">Beschreibung <span class="hint">(optional)</span></label>
+          <textarea id="f-desc" maxlength="300" placeholder="z. B. Abholung an der Info-Theke im Erdgeschoss"></textarea>
+        </div>
+        <label class="check"><input type="checkbox" id="f-paid"> <span id="t-paid">Alles ist bereits bezahlt.</span></label>
+        <label class="check"><input type="checkbox" id="f-allowed"> Keine verbotenen Artikel (Medikamente, Alkohol, Tabak, Bargeld, Ausweise, Gefahrgut).</label>
+        <div class="price" id="f-price" aria-live="polite"></div>
+        <div class="err" id="f-err" role="alert" hidden></div>
+        <div class="actions">
+          <button type="submit" class="btn accent">Auftrag veröffentlichen</button>
+          <button type="button" class="btn ghost" id="btn-cancel-form">Abbrechen</button>
+        </div>
+      </form>
 
-  <div class="seg" role="group" aria-label="Ansicht">
-    <button type="button" id="v-list" aria-pressed="true">Liste</button>
-    <button type="button" id="v-map" aria-pressed="false">Karte 3D</button>
-  </div>
+      <h2 id="h-kunde">Meine Aufträge</h2>
+      <div id="list-kunde" class="stack"></div>
+      <div id="done-kunde" class="stack"></div>
+    </section>
 
-  <section class="card mappanel" id="map-panel" hidden aria-labelledby="map-title">
-    <div class="map3d" id="map3d" aria-hidden="true"><span class="maphint" id="map-hint">Ziehen zum Drehen · zwei Finger zum Zoomen</span></div>
-    <div class="mapbody">
+    <section class="mapinfo stack" id="map-panel" aria-labelledby="map-title">
       <h2 id="map-title">Karte</h2>
       <form class="inline" id="map-focus-form" novalidate>
         <input type="text" id="m-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Karte um diese Postleitzahl zeigen">
@@ -246,99 +341,36 @@ textarea { min-height: 72px; resize: vertical; }
       <p class="legend" id="map-legend"></p>
       <div class="chips" id="map-chips" role="group" aria-label="Gebiete"></div>
       <p class="note" id="map-sheet" aria-live="polite"></p>
-      <p class="hint">Lage der Gebiete nach PLZ-Mittelpunkt (Daten: WZB plz_geocoord, Apache-2.0). Häuser und Bäume sind nur Dekoration. Standort per GPS kommt in der echten App.</p>
-    </div>
-  </section>
+    </section>
 
-  <section id="view-kunde" class="stack" aria-labelledby="h-kunde">
-    <div class="sectionhead">
-      <h2 id="h-kunde">Meine Aufträge</h2>
-      <button type="button" class="btn accent" id="btn-new" aria-expanded="false" aria-controls="form-new">Neuer Auftrag</button>
-    </div>
-
-    <form id="form-new" class="card" hidden novalidate>
-      <h3>Was soll erledigt werden?</h3>
-      <div class="field">
-        <label for="f-cat">Kategorie</label>
-        <select id="f-cat" required></select>
-        <span class="hint" id="f-cat-hint"></span>
-      </div>
-      <div class="field">
-        <span class="legend" id="l-from">Abholung</span>
-        <div class="row2">
-          <input type="text" id="f-from-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Abholung" required>
-          <input type="text" id="f-from-addr" aria-labelledby="l-from" required>
-        </div>
-      </div>
-      <div class="field" id="field-code">
-        <label for="f-code"><span id="l-code">Abholnummer</span> <span class="hint">(optional)</span></label>
-        <input type="text" id="f-code">
-        <span class="hint">Sieht der Helfer erst nach der Annahme.</span>
-      </div>
-      <div class="field">
-        <span class="legend" id="l-to">Bringen zu</span>
-        <div class="row2">
-          <input type="text" id="f-to-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Ziel" required>
-          <input type="text" id="f-to-addr" aria-labelledby="l-to" required>
-        </div>
-      </div>
-      <div class="field">
-        <span class="legend" id="l-when">Erledigt bis</span>
-        <div class="row2">
-          <select id="f-day" aria-label="Tag"><option value="0">Heute</option><option value="1">Morgen</option></select>
-          <input type="time" id="f-until" value="18:00" aria-label="Uhrzeit" required>
-        </div>
-        <span class="hint">Mindestens 30 Minuten ab jetzt. Danach läuft der Auftrag automatisch ab.</span>
-      </div>
-      <div class="field" id="field-size">
-        <span class="legend" id="l-size">Größe</span>
-        <div class="sizes" role="radiogroup" aria-labelledby="l-size" id="f-sizes"></div>
-      </div>
-      <div class="field">
-        <label for="f-desc">Beschreibung <span class="hint">(optional)</span></label>
-        <textarea id="f-desc" maxlength="300" placeholder="z. B. Abholung an der Info-Theke im Erdgeschoss"></textarea>
-      </div>
-      <label class="check"><input type="checkbox" id="f-paid"> <span id="t-paid">Alles ist bereits bezahlt.</span></label>
-      <label class="check"><input type="checkbox" id="f-allowed"> Keine verbotenen Artikel (Medikamente, Alkohol, Tabak, Bargeld, Ausweise, Gefahrgut).</label>
-      <div class="price" id="f-price" aria-live="polite"></div>
-      <div class="err" id="f-err" role="alert" hidden></div>
-      <div class="actions">
-        <button type="submit" class="btn accent">Auftrag veröffentlichen</button>
-        <button type="button" class="btn ghost" id="btn-cancel-form">Abbrechen</button>
-      </div>
-    </form>
-
-    <div id="list-kunde" class="stack"></div>
-    <div id="done-kunde" class="stack"></div>
-  </section>
-
-  <section id="view-helfer" class="stack" hidden aria-labelledby="h-helfer">
+    <section id="view-helfer" class="stack" hidden aria-labelledby="h-helfer">
     <div class="card" id="area">
-      <div id="area-edit" class="field">
-        <span class="legend" id="l-area">Mein Gebiet</span>
-        <div class="row2">
-          <input type="text" id="a-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Deine Postleitzahl">
-          <select id="a-range" aria-label="Umkreis">
-            <option value="exact">Nur diese PLZ</option>
-            <option value="near">Umgebung (gleiche ersten 3 Ziffern)</option>
-            <option value="region" selected>Region (gleiche ersten 2 Ziffern)</option>
-          </select>
+        <div id="area-edit" class="field">
+          <span class="legend" id="l-area">Mein Gebiet</span>
+          <div class="row2">
+            <input type="text" id="a-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Deine Postleitzahl">
+            <select id="a-range" aria-label="Umkreis">
+              <option value="exact">Nur diese PLZ</option>
+              <option value="near">Umgebung (gleiche ersten 3 Ziffern)</option>
+              <option value="region" selected>Region (gleiche ersten 2 Ziffern)</option>
+            </select>
+          </div>
+          <button type="button" class="btn primary" id="a-save">Gebiet speichern</button>
+          <span class="hint">Zum Ausprobieren: PLZ 10178 und „Region“ zeigt die Berliner Beispielaufträge.</span>
         </div>
-        <button type="button" class="btn primary" id="a-save">Gebiet speichern</button>
-        <span class="hint">Zum Ausprobieren: PLZ 10178 und „Region“ zeigt die Berliner Beispielaufträge.</span>
+        <p class="who" id="area-show" hidden></p>
       </div>
-      <p class="who" id="area-show" hidden></p>
-    </div>
-    <div class="earn" id="earn"></div>
-    <h2 id="h-helfer">Meine Einsätze</h2>
-    <div id="list-mine" class="stack"></div>
-    <h2 id="h-market">Aufträge in deinem Gebiet</h2>
-    <p class="note">Du entscheidest selbst, was du annimmst. Kein Zeitplan, keine Nachteile beim Ablehnen. Genaue Adressen siehst du erst nach der Annahme.</p>
-    <div id="list-market" class="stack"></div>
-  </section>
+      <div class="earn" id="earn"></div>
+      <h2 id="h-helfer">Meine Einsätze</h2>
+      <div id="list-mine" class="stack"></div>
+      <h2 id="h-market">Aufträge in deinem Gebiet</h2>
+      <p class="note">Du entscheidest selbst, was du annimmst. Kein Zeitplan, keine Nachteile beim Ablehnen. Genaue Adressen siehst du erst nach der Annahme.</p>
+      <div id="list-market" class="stack"></div>
+    </section>
 
-  <p class="foot">Prototyp zum Ausprobieren: keine echten Zahlungen, Beispielpreise. Alle Tester sehen dieselben Aufträge. Bitte keine echten Daten eingeben.</p>
-</div>
+    <p class="foot">Prototyp zum Ausprobieren: keine echten Zahlungen, Beispielpreise. Alle Tester sehen dieselben Aufträge. Bitte keine echten Daten eingeben. Karte: Lage der Gebiete nach PLZ-Mittelpunkt (WZB plz_geocoord, Apache-2.0); Häuser und Bäume sind Dekoration. GPS kommt in der echten App.</p>
+  </div>
+</section>
 
 <div class="toast" aria-live="polite"><p id="toast" hidden></p></div>
 
@@ -409,7 +441,7 @@ textarea { min-height: 72px; resize: vertical; }
     confirm: null, pinDraft: {}, nfReason: {}, busy: {},
     chatOpen: {}, chatUnsub: {}, msgs: {}, chatDraft: {},
     area: null, showDone: false, expiring: {}, formOpened: false,
-    view: "list", mapSel: null, helfers: [], mapFocus: null
+    view: "map", mapSel: null, helfers: [], mapFocus: null
   };
   var store = null;
 
@@ -454,8 +486,10 @@ textarea { min-height: 72px; resize: vertical; }
   function plzKnown(plz) { return !GEO.data || !!GEO.data[plz]; }
   function needName() {
     if (state.name) return false;
-    toast("Bitte zuerst oben deinen Namen eingeben.");
-    $("p-name").focus();
+    toast("Bitte zuerst deinen Namen eingeben.");
+    state.askName = true; renderProfile();
+    setSheet("full");
+    setTimeout(function () { $("profile").scrollIntoView({ block: "start" }); $("p-name").focus(); }, 320);
     return true;
   }
 
@@ -536,12 +570,13 @@ textarea { min-height: 72px; resize: vertical; }
     var has = !!state.name;
     $("profile-edit").hidden = has;
     $("profile-show").hidden = !has;
+    $("profile").hidden = has || !state.askName;
     if (has) $("profile-show").innerHTML = "<span>Du bist <b>" + esc(state.name) + "</b></span><button type=\"button\" class=\"linkbtn\" data-act=\"edit-name\">Ändern</button>";
   }
   function saveName() {
     var v = $("p-name").value.trim().slice(0, 24);
     if (v.length < 2) { toast("Bitte mindestens zwei Buchstaben eingeben."); $("p-name").focus(); return; }
-    state.name = v;
+    state.name = v; state.askName = false;
     ls("faro-demo-name", v);
     renderProfile();
     toast("Gespeichert. Andere sehen dich als " + v + ".");
@@ -615,7 +650,9 @@ textarea { min-height: 72px; resize: vertical; }
     $("form-new").hidden = !open;
     $("btn-new").setAttribute("aria-expanded", open ? "true" : "false");
     $("btn-new").hidden = open;
-    if (open && !noFocus) $("f-cat").focus();
+    $("cat-tiles").hidden = open;
+    if (open && !noFocus) { setSheet("full"); setTimeout(function () { $("form-new").scrollIntoView({ block: "start" }); $("f-cat").focus(); }, 320); }
+    if (!open && !noFocus) setSheet("peek");
   }
   function prefill(e) {
     $("f-cat").value = e.category;
@@ -812,6 +849,9 @@ textarea { min-height: 72px; resize: vertical; }
     $("role-helfer").setAttribute("aria-pressed", kunde ? "false" : "true");
     $("view-kunde").hidden = !kunde;
     $("view-helfer").hidden = kunde;
+    $("sheet").setAttribute("data-role", kunde ? "kunde" : "helfer");
+    var ini = (state.name || "").split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
+    $("btn-profile").textContent = ini || "?";
 
     var active = document.activeElement && document.activeElement.id;
     var scrolls = {};
@@ -868,7 +908,7 @@ textarea { min-height: 72px; resize: vertical; }
 
   var Map3D = (function () {
     var ok = !!(window.THREE && window.THREE.OrbitControls && window.d3 && window.d3.Delaunay);
-    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null, lastData = null, tileRefs = {}, curSel = null;
+    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null, lastData = null, tileRefs = {}, curSel = null, inset = 0, paused = false;
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     function el() { return $("map3d"); }
     function tok(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888888"; }
@@ -1004,7 +1044,19 @@ textarea { min-height: 72px; resize: vertical; }
       if (!renderer) return;
       var w = el().clientWidth, h = el().clientHeight;
       if (!w || !h) return;
-      renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw();
+      renderer.setSize(w, h, false); camera.aspect = w / h;
+      var top = Math.min(110, h * 0.15), off = Math.round((inset - top) / 2);
+      if (inset > 0) camera.setViewOffset(w, h, 0, off, w, h); else camera.clearViewOffset();
+      camera.updateProjectionMatrix(); draw();
+    }
+    function fit() {
+      var W = el().clientWidth || 1, H = el().clientHeight || 1, top = Math.min(110, H * 0.15);
+      var vis = Math.max(120, H - inset - top), tv = Math.tan(camera.fov * Math.PI / 360);
+      var need = 7.0 / Math.min(tv * vis / H, tv * W / H);
+      var d = Math.min(60, Math.max(12, need * 0.9));
+      var dir = new THREE.Vector3(0, 13.6, 9.4).normalize();
+      camera.position.copy(dir.multiplyScalar(d)); controls.maxDistance = d * 1.4; controls.update();
+      if (scene && scene.fog) { scene.fog.near = d * 1.05; scene.fog.far = d * 2.2; }
     }
     function draw() { if (renderer) renderer.render(scene, camera); }
     function loop(t) {
@@ -1151,11 +1203,7 @@ textarea { min-height: 72px; resize: vertical; }
       kmLbl.position.set(4.2, 0.22, 6.0); root.add(kmLbl);
 
       controls.target.set(0, 0, 0.4); controls.minDistance = 6; controls.maxDistance = 34;
-      resize();
-      var w = el().clientWidth || 1, h = el().clientHeight || 1, vf = camera.fov * Math.PI / 180;
-      var hf = 2 * Math.atan(Math.tan(vf / 2) * (w / h)), need = 7.0 / Math.tan(Math.min(vf, hf) / 2);
-      var dir = new THREE.Vector3(0, 13.6, 9.4).normalize();
-      camera.position.copy(dir.multiplyScalar(Math.min(32, Math.max(12, need * 0.92)))); controls.update();
+      resize(); fit();
       select(data.selected || null); draw();
       return true;
     }
@@ -1164,9 +1212,11 @@ textarea { min-height: 72px; resize: vertical; }
       show: function (data, pick) {
         onPick = pick;
         var good = build(data);
-        if (good && !running) { running = true; requestAnimationFrame(loop); }
+        if (good && !running && !paused) { running = true; requestAnimationFrame(loop); }
         return good;
       },
+      setInset: function (px, refit) { inset = px; if (renderer) { resize(); if (refit) fit(); draw(); } },
+      pause: function (on) { paused = on; if (on) running = false; else if (renderer && !running) { running = true; requestAnimationFrame(loop); } },
       hide: function () { running = false; }
     };
   })();
@@ -1211,15 +1261,10 @@ textarea { min-height: 72px; resize: vertical; }
     return { role: state.role, focus: focus, center: { lat: c[0], lng: c[1] }, radiusKm: Math.round(radiusKm * 100) / 100, tiles: list, selected: tiles[state.mapSel] ? state.mapSel : null, outside: outside };
   }
   function mapFallback(msg) {
-    $("map3d").innerHTML = '<p class="empty" style="margin:16px">' + esc(msg) + "</p>";
-    $("map3d").style.height = "auto";
+    document.body.classList.add("nomap");
+    $("map-sheet").textContent = msg + " " + $("map-sheet").textContent;
   }
   function renderMap() {
-    var on = state.view === "map";
-    $("v-list").setAttribute("aria-pressed", on ? "false" : "true");
-    $("v-map").setAttribute("aria-pressed", on ? "true" : "false");
-    $("map-panel").hidden = !on;
-    if (!on) { Map3D.hide(); return; }
     loadGeo();
     var helferRole = state.role === "helfer";
     $("map-title").textContent = helferRole ? "Aufträge auf der Karte" : "Helfer in deiner Nähe";
@@ -1233,6 +1278,8 @@ textarea { min-height: 72px; resize: vertical; }
       if (GEO.failed) mapFallback("Die Kartendaten konnten nicht geladen werden. Bitte später erneut versuchen.");
       return;
     }
+    var ft = data.tiles.filter(function (t) { return t.focus; })[0];
+    $("loc-text").textContent = ft ? ft.plz + " · " + (shortName(ft.name) || "Gebiet") : "Gebiet wählen";
     var shownTiles = data.tiles.filter(function (t) { return t.focus || t.errands || t.helfers || t.selected; });
     $("map-chips").innerHTML = shownTiles.map(function (t) {
       var n = helferRole ? t.errands : t.helfers;
@@ -1250,8 +1297,8 @@ textarea { min-height: 72px; resize: vertical; }
     if (helferRole && data.outside) sheet += " " + data.outside + (data.outside === 1 ? " weiterer Auftrag" : " weitere Aufträge") + " in deinem Gebiet " + (data.outside === 1 ? "liegt" : "liegen") + " außerhalb der Karte (siehe Liste).";
     $("map-sheet").textContent = sheet;
     if (document.activeElement !== $("m-plz")) $("m-plz").value = data.focus;
-    if (!Map3D.available()) { mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten."); return; }
-    if (!Map3D.show(data, function (plz) { state.mapSel = state.mapSel === plz ? null : plz; render(); })) mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete unten.");
+    if (!Map3D.available()) { mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete."); return; }
+    if (!Map3D.show(data, function (plz) { state.mapSel = state.mapSel === plz ? null : plz; render(); })) mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete.");
   }
 
   function errorText(e) {
@@ -1297,6 +1344,74 @@ textarea { min-height: 72px; resize: vertical; }
     store.sendMessage(id, { from: state.me, role: role, name: state.name, text: text, at: Date.now() })
       .then(function () { state.chatDraft[id] = ""; render(); })
       .catch(function (err) { toast(errorText(err)); });
+  }
+
+
+  /* ---------- Blatt (Bottom Sheet) im Uber-Stil ---------- */
+  function setSheet(st) {
+    var sh = $("sheet");
+    if (sh.getAttribute("data-state") === st) return;
+    sh.setAttribute("data-state", st);
+    $("grab").setAttribute("aria-expanded", st === "full" ? "true" : "false");
+    $("grab").setAttribute("aria-label", st === "full" ? "Bereich verkleinern" : "Bereich vergrößern");
+    Map3D.pause(st === "full");
+    setTimeout(syncInset, 320);
+  }
+  function syncInset() {
+    if (document.body.classList.contains("nomap")) return;
+    if ($("sheet").getAttribute("data-state") === "peek") Map3D.setInset($("sheet").offsetHeight, true);
+  }
+  (function initSheet() {
+    var grab = $("grab"), sh = $("sheet"), drag = null;
+    grab.addEventListener("pointerdown", function (ev) { drag = { y: ev.clientY, h: sh.offsetHeight, moved: false }; grab.setPointerCapture(ev.pointerId); sh.classList.add("dragging"); });
+    grab.addEventListener("pointermove", function (ev) {
+      if (!drag) return;
+      var dy = drag.y - ev.clientY; if (Math.abs(dy) > 4) drag.moved = true;
+      sh.style.height = Math.max(160, Math.min(window.innerHeight - 56, drag.h + dy)) + "px";
+    });
+    function end() {
+      if (!drag) return;
+      var h = sh.offsetHeight, moved = drag.moved; drag = null;
+      sh.classList.remove("dragging"); sh.style.height = "";
+      var cur = sh.getAttribute("data-state");
+      if (!moved) setSheet(cur === "full" ? "peek" : "full");
+      else setSheet(h > window.innerHeight * 0.66 ? "full" : "peek");
+    }
+    grab.addEventListener("pointerup", end);
+    grab.addEventListener("pointercancel", end);
+    grab.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setSheet(sh.getAttribute("data-state") === "full" ? "peek" : "full"); } });
+    window.addEventListener("resize", function () { setTimeout(syncInset, 50); });
+    $("btn-profile").addEventListener("click", function () {
+      setSheet("full");
+      state.askName = true;
+      if (state.name) { $("p-name").value = state.name; state.name = ""; }
+      renderProfile();
+      setTimeout(function () { $("p-name").focus(); }, 300);
+    });
+    $("loc-chip").addEventListener("click", function () {
+      setSheet("full");
+      setTimeout(function () { $("map-panel").scrollIntoView({ block: "start" }); $("m-plz").focus(); }, 320);
+    });
+  })();
+  function initTiles() {
+    var ICON = {
+      pickup_click_collect: '<path d="M6 8h12l-1 12H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="2"/>',
+      task_parcel_return: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15 14h-5m0 0 2-2m-2 2 2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      task_parcel_pickup: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 8l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="2"/>',
+      task_key_handover: '<circle cx="8" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12h9m-3 0v3m-3-3v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      task_documents: '<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/>',
+      task_repair_service: '<path d="M14 6a4 4 0 0 0 5 5l-8 8-3-3 8-8a4 4 0 0 0-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+      purchase_errand: '<circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/><path d="M3 4h2l2.5 11h11L21 8H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
+    };
+    var SHORT = { pickup_click_collect: "Click & Collect", task_parcel_return: "Retoure", task_parcel_pickup: "Paket abholen", task_key_handover: "Schlüssel", task_documents: "Dokumente", task_repair_service: "Reparatur" };
+    var html = Object.keys(CATS).map(function (k) {
+      return '<button type="button" class="tile" data-cat="' + k + '"><i><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--deep)">' + ICON[k] + "</svg></i>" + esc(SHORT[k]) + "</button>";
+    }).join("") + '<button type="button" class="tile" disabled title="Kommt bald: Einkaufen mit Einmal-Karte"><i><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">' + ICON.purchase_errand + "</svg></i>Einkaufen (bald)</button>";
+    $("cat-tiles").innerHTML = html;
+    $("cat-tiles").addEventListener("click", function (ev) {
+      var b = ev.target.closest("button[data-cat]"); if (!b) return;
+      $("f-cat").value = b.getAttribute("data-cat"); updateFormInfo(); setFormOpen(true);
+    });
   }
 
   /* ---------- Aktionen ---------- */
@@ -1384,9 +1499,7 @@ textarea { min-height: 72px; resize: vertical; }
     var t = ev.target;
     if (t.getAttribute && t.getAttribute("data-nf")) state.nfReason[t.getAttribute("data-nf")] = t.value;
   });
-  function setRole(r) { state.role = r; state.confirm = null; state.mapSel = null; ls("faro-demo-role", r); render(); }
-  $("v-list").addEventListener("click", function () { state.view = "list"; state.mapSel = null; render(); });
-  $("v-map").addEventListener("click", function () { state.view = "map"; render(); });
+  function setRole(r) { state.role = r; state.confirm = null; state.mapSel = null; ls("faro-demo-role", r); render(); $("sheet-body").scrollTop = 0; }
   $("map-focus-form").addEventListener("submit", function (ev) {
     ev.preventDefault();
     var v = $("m-plz").value.trim();
@@ -1410,7 +1523,9 @@ textarea { min-height: 72px; resize: vertical; }
   state.name = ls("faro-demo-name") || "";
   try { var a = JSON.parse(ls("faro-demo-area") || "null"); if (a && /^\d{5}$/.test(a.plz)) state.area = a; } catch (e) {}
   initForm();
+  initTiles();
   loadGeo();
+  setTimeout(syncInset, 400);
   renderProfile();
   renderArea();
   render();
@@ -1441,10 +1556,6 @@ textarea { min-height: 72px; resize: vertical; }
         state.errands = list;
         state.loaded = true;
         checkExpiry();
-        if (!list.some(function (e) { return e.clientId === state.me; }) && state.role === "kunde" && !state.formOpened) {
-          state.formOpened = true;
-          setFormOpen(true, true);
-        }
         render();
       }, function (e) {
         $("banner").textContent = "Die Verbindung zu den Aufträgen ist unterbrochen. Bitte die Seite neu laden.";

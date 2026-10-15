@@ -17,6 +17,7 @@ Prototipo clicable, en alemán, del flujo del Cliente (00.2) y del Helfer (00.3)
   - **Nunca se muestran posiciones exactas ni quién está conectado** (decisión de Intamar, 14/10/2026). El GPS solo será posible en la app real.
   - Sin WebGL, quedan los chips de barrios como alternativa accesible.
   - Librerías: three.js r128 (cdnjs), OrbitControls y d3-delaunay 6.0.4 (jsDelivr).
+- **Diseño estilo Uber (15/10/2026, a petición de Intamar):** el mapa 3D ocupa toda la pantalla. Arriba flotan la marca, el avatar (iniciales; abre el perfil) y un chip con la zona actual (abre el selector de PLZ). Abajo hay una hoja deslizable (recogida/desplegada, por arrastre o toque) con el cambio de rol, la barra grande «Was soll erledigt werden?», iconos de categorías (y «Einkaufen (bald)», COMPRAR aún no simulado) y las listas. El mapa se centra en el hueco entre la barra superior y la hoja, y se pausa con la hoja desplegada. Sin WebGL, la página vuelve a un diseño de lista normal.
 - **Colores:** según 06.1 (un solo botón ámbar por pantalla; borde `--amber-strong` en gráficos ámbar).
 - **Qué no hace (a propósito):** pagos reales (H3), registro, fotos de evidencia, mapa real de calles (la página no puede cargar imágenes externas), avisos, incidencias de entrega ni reclamaciones.
 - **Limitación de privacidad:** en el prototipo todos los datos del mandado (incluido el PIN) están en un documento compartido. En la app real, las direcciones exactas y los códigos van en tablas separadas protegidas con RLS (00.5).
