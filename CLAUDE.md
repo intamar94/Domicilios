@@ -22,15 +22,18 @@ https://claude.ai/code/artifact/45bacf9a-809d-4c36-924b-ab2a4497fd7b
 
 ## MVP — qué entra y qué no
 
+Visión: cualquier mandado cotidiano («estoy enferma y quiero algo del Lidl o de la panadería»).
+
 ENTRA:
 - RECOGER: Click & Collect ya pagado por el Cliente en la tienda.
 - HACER: devolver o recoger paquetes, llaves, documentos, reparaciones.
+- COMPRAR (decisión de Intamar, 15/10/2026; detalle en docs/01-investigacion/01.10): el Helfer paga con una tarjeta virtual de un solo uso por mandado, emitida por el PSP, con tope autorizado por el Cliente, ticket obligatorio y cobro del importe real. El Helfer nunca pone su dinero. Se diseña y se simula ya; con dinero real solo cuando H3 confirme por escrito la emisión de tarjetas.
 - FARO cobra solo su tarifa de servicio, vía un PSP regulado.
 
 NO ENTRA (no implementar, aunque parezca fácil):
-- COMPRAR con dinero del Cliente.
+- Que el Helfer adelante dinero propio, o que FARO compre y revenda productos.
 - Saldo FARO y FARO Card.
-- Medicamentos con receta, acompañar personas, ayuda física.
+- Medicamentos (con o sin receta), alcohol, tabaco, acompañar personas, ayuda física.
 
 Motivo: FARO nunca toca dinero de terceros sin un proveedor regulado confirmado por escrito (ZAG / BaFin).
 
@@ -40,7 +43,7 @@ No escribas código que dependa de estos puntos. Si una tarea los toca, márcala
 
 - H1 Forma jurídica (UG) + Steuerberater.
 - H2 Encuadre legal del Helfer (abogado laboral; Directiva de Trabajo en Plataformas).
-- H3 PSP que confirme por escrito los pagos a Helfer.
+- H3 PSP que confirme por escrito los pagos a Helfer y la emisión de tarjetas virtuales de un solo uso para COMPRAR.
 - H4 Proveedor regulado para Saldo / FARO Card.
 - H5 Seguro de responsabilidad.
 
