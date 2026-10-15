@@ -1,0 +1,1646 @@
+<title>FARO Prototyp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: eine mobile Spalte; Rollenschalter oben; Aufträge als Karten mit Fortschrittsleiste und Chat */
+:root {
+  --bg: #eef3f3;
+  --surface: #ffffff;
+  --surface-2: #f6f9f9;
+  --ink: #0f2233;
+  --muted: #4f6273;
+  --line: #d3dfe1;
+  --teal: #0b6f6a;
+  --teal-ink: #ffffff;
+  --teal-soft: #dcefed;
+  --amber: #f2a516;
+  --amber-soft: #fff1d2;
+  --amber-ink: #6b4300;
+  --amber-strong: #b36b00;
+  --deep: #123a5c;
+  --deep-soft: #e1ebf4;
+  --ok: #1b6e3a;
+  --ok-soft: #dff1e5;
+  --bad: #a8261d;
+  --bad-soft: #fbe3e0;
+  --focus: #f2a516;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a1620; --surface: #112331; --surface-2: #0d1d29; --ink: #e6eef2; --muted: #a2b4c2; --line: #233a4b;
+    --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a; --amber-strong: #f5b843;
+    --deep: #a9cdf0; --deep-soft: #16304a; --ok: #6fd596; --ok-soft: #143a24; --bad: #ff9a90; --bad-soft: #3d1a17; --focus: #f5b843;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a1620; --surface: #112331; --surface-2: #0d1d29; --ink: #e6eef2; --muted: #a2b4c2; --line: #233a4b;
+  --teal: #43b9b0; --teal-ink: #04201e; --teal-soft: #12363a; --amber: #f5b843; --amber-soft: #3a2b0d; --amber-ink: #ffd88a; --amber-strong: #f5b843;
+  --deep: #a9cdf0; --deep-soft: #16304a; --ok: #6fd596; --ok-soft: #143a24; --bad: #ff9a90; --bad-soft: #3d1a17; --focus: #f5b843;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px 96px;
+  display: grid;
+  gap: 16px;
+}
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: 1.25rem; font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+
+/* Kopf */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 8px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; color: var(--deep); }
+.brand small { display: block; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em; }
+.proto { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--amber-ink); background: var(--amber-soft); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+
+.roles { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px; gap: 4px; }
+.roles button { border: 0; background: transparent; padding: 10px 8px; border-radius: 10px; font-weight: 700; cursor: pointer; min-height: 48px; }
+.roles button span { display: block; font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.roles button[aria-pressed="true"] { background: var(--teal); color: var(--teal-ink); }
+.roles button[aria-pressed="true"] span { color: inherit; opacity: 0.85; }
+
+.banner { font-size: 0.9rem; padding: 10px 12px; border-radius: 10px; background: var(--deep-soft); color: var(--ink); }
+.who { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.95rem; }
+.linkbtn { border: 0; background: none; padding: 6px 4px; min-height: 40px; color: var(--teal); font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+.sectionhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.note { color: var(--muted); font-size: 0.9rem; }
+.stack { display: grid; gap: 12px; }
+
+/* Buttons */
+.btn { border: 1px solid transparent; border-radius: 10px; padding: 10px 14px; min-height: 44px; font-weight: 700; cursor: pointer; background: var(--surface-2); border-color: var(--line); }
+.btn.primary { background: var(--teal); color: var(--teal-ink); border-color: var(--teal); }
+.btn.accent { background: var(--amber); color: #2b1b00; border-color: var(--amber); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--bad); }
+.btn.small { min-height: 40px; padding: 6px 10px; font-size: 0.9rem; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Formular */
+form.card { gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field label, .legend { font-weight: 700; font-size: 0.95rem; }
+.hint { font-size: 0.85rem; color: var(--muted); font-weight: 400; }
+input[type=text], input[type=time], select, textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); min-height: 44px;
+}
+textarea { min-height: 72px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 7.5rem 1fr; gap: 10px; }
+.row2 > * { min-width: 0; }
+.sizes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sizes label { border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 2px; cursor: pointer; background: var(--surface-2); font-size: 0.85rem; }
+.sizes label strong { font-size: 0.95rem; }
+.sizes input { position: absolute; opacity: 0; pointer-events: none; }
+.sizes label:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
+.sizes label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.95rem; }
+.check input { width: 22px; height: 22px; margin-top: 1px; flex: none; accent-color: var(--teal); }
+.price { display: grid; gap: 4px; padding: 12px; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--line); font-variant-numeric: tabular-nums; }
+.price div { display: flex; justify-content: space-between; gap: 12px; }
+.price .total { font-weight: 700; border-top: 1px solid var(--line); padding-top: 6px; }
+.err { color: var(--bad); font-size: 0.9rem; font-weight: 700; }
+.err ul { margin: 4px 0 0; padding-left: 1.2em; }
+
+/* Karten */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: grid; gap: 10px; }
+.card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.cat { font-family: var(--display); font-weight: 600; font-size: 1.05rem; }
+.chip { font-size: 0.8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.t-wait { background: var(--amber-soft); color: var(--amber-ink); }
+.t-active { background: var(--teal-soft); color: var(--teal); }
+.t-deliv { background: var(--deep-soft); color: var(--deep); }
+.t-ok { background: var(--ok-soft); color: var(--ok); }
+.t-off { background: var(--surface-2); color: var(--muted); }
+.t-bad { background: var(--bad-soft); color: var(--bad); }
+.tag { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.route { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.95rem; }
+.route b { color: var(--ink); font-weight: 700; }
+.desc { font-size: 0.95rem; overflow-wrap: anywhere; }
+.person { font-size: 0.95rem; }
+.person b { font-weight: 700; }
+.steps { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 0; margin: 0; }
+.steps li { height: 6px; border-radius: 3px; background: var(--line); }
+.steps li.on { background: var(--teal); }
+.steplabel { font-size: 0.8rem; color: var(--muted); }
+.detail { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.95rem; overflow-wrap: anywhere; margin: 0; }
+.detail dt { font-size: 0.8rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.detail dd { margin: 0 0 4px; }
+.pin { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--amber-soft); color: var(--amber-ink); }
+.pin strong { font-family: var(--display); font-size: 1.8rem; letter-spacing: 0.3em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.card footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.money { font-family: var(--display); font-weight: 800; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.money small { display: block; font-family: var(--body); font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.confirm { display: grid; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); }
+.pinrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.pinrow input { width: 8rem; letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+.inline { display: flex; gap: 8px; }
+.shop { margin: 0; padding-left: 1.1em; }
+.vcard { display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px; background: var(--deep); color: var(--bg); font-variant-numeric: tabular-nums; }
+.vcard span { font-size: 0.8rem; opacity: 0.85; }
+.vcard strong { font-family: var(--display); font-size: 1.4rem; letter-spacing: 0.12em; }
+.vcard small { font-size: 0.8rem; opacity: 0.85; }
+.inline input { flex: 1; min-width: 0; }
+
+/* Chat */
+.chat { display: grid; gap: 8px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+.msgs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 240px; overflow-y: auto; }
+.msg { justify-self: start; max-width: 85%; padding: 6px 10px; border-radius: 12px 12px 12px 4px; background: var(--surface); border: 1px solid var(--line); font-size: 0.95rem; overflow-wrap: anywhere; }
+.msg.me { justify-self: end; border-radius: 12px 12px 4px 12px; background: var(--teal-soft); border-color: transparent; }
+.msg small { display: block; font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.earn { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--deep); color: var(--bg); }
+.earn .money small, .earn .note { color: inherit; opacity: 0.85; }
+.earn .note { max-width: 14rem; }
+.empty { padding: 18px 14px; border: 1px dashed var(--line); border-radius: 16px; color: var(--muted); text-align: center; }
+
+.toast {
+  position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; pointer-events: none;
+  padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.toast p { background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; max-width: 520px; font-weight: 700; }
+.foot { font-size: 0.8rem; color: var(--muted); text-align: center; }
+/* Uber-Stil: Vollbild-Karte, schwebende Leiste oben, ziehbares Blatt unten */
+html, body { height: 100%; }
+body { overflow: hidden; }
+.mapfull { position: fixed; inset: 0; z-index: 0; }
+.topbar { position: fixed; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.brandchip { display: flex; align-items: center; gap: 8px; background: var(--surface); color: var(--deep); border-radius: 999px; padding: 6px 12px 6px 8px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16); font-family: var(--display); font-size: 1.1rem; letter-spacing: 0.04em; }
+.brandchip .proto { font-family: var(--body); font-size: 0.65rem; padding: 2px 6px; }
+.avatar { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--deep); color: var(--bg); font-weight: 700; font-size: 0.95rem; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16); cursor: pointer; }
+.locchip { position: fixed; z-index: 3; top: calc(env(safe-area-inset-top, 0px) + 64px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; max-width: calc(100% - 32px); min-height: 40px; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.16); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.sheet { position: fixed; z-index: 4; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 600px; height: 50vh; height: 50dvh; display: flex; flex-direction: column; background: var(--bg); border-radius: 22px 22px 0 0; box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.18); }
+.sheet[data-state="full"] { height: calc(100vh - 56px - env(safe-area-inset-top, 0px)); height: calc(100dvh - 56px - env(safe-area-inset-top, 0px)); }
+@media (prefers-reduced-motion: no-preference) { .sheet { transition: height 0.28s ease; } .sheet.dragging { transition: none; } }
+.grab { display: flex; justify-content: center; padding: 10px 0 8px; cursor: grab; touch-action: none; flex: none; }
+.grab span { width: 44px; height: 5px; border-radius: 3px; background: var(--line); }
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; padding-top: 2px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet .roles button { min-height: 44px; }
+.sheet[data-role="helfer"] #map-panel { order: 1; }
+.sheet[data-role="helfer"] #view-helfer { order: 2; }
+.sheet[data-role="kunde"] #view-kunde { order: 1; }
+.sheet[data-role="kunde"] #map-panel { order: 2; }
+.sheet .foot { order: 9; }
+.sheet .roles, .sheet #banner, .sheet #profile { order: 0; }
+.askbar { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 58px; padding: 0 18px; border: 0; border-radius: 14px; background: var(--deep-soft); color: var(--ink); font-family: var(--display); font-weight: 800; font-size: 1.2rem; text-align: left; cursor: pointer; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { display: grid; justify-items: center; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; font-size: 0.78rem; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.2; }
+.tile i { display: grid; place-items: center; width: 100%; aspect-ratio: 1; max-width: 72px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.tile:disabled { cursor: default; color: var(--muted); }
+.tile:disabled i { opacity: 0.6; }
+.mapinfo h2 { font-size: 1.1rem; }
+body.nomap { overflow: auto; }
+body.nomap .mapfull, body.nomap .locchip { display: none; }
+body.nomap .topbar { position: static; padding: 12px 16px 0; }
+body.nomap .sheet { position: static; height: auto; box-shadow: none; border-radius: 0; }
+body.nomap .grab { display: none; }
+
+/* Ansicht: Liste oder 3D-Karte */
+.seg { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; justify-self: start; }
+.seg button { border: 0; background: transparent; border-radius: 9px; padding: 8px 14px; min-height: 40px; font-weight: 700; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--deep); color: var(--bg); }
+.mappanel { padding: 0; overflow: hidden; gap: 0; }
+.map3d { background: var(--surface-2); touch-action: none; }
+.map3d canvas { display: block; width: 100%; height: 100%; }
+.map3d .maphint { position: absolute; left: 10px; bottom: 10px; font-size: 0.8rem; background: var(--surface); color: var(--muted); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); pointer-events: none; }
+.mapbody { display: grid; gap: 10px; padding: 12px 14px 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 6px 12px; min-height: 40px; font-weight: 700; cursor: pointer; font-variant-numeric: tabular-nums; }
+.chips button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #2b1b00; }
+.chips button small { font-weight: 400; margin-left: 4px; }
+</style>
+
+<div class="map3d mapfull" id="map3d" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brandchip">
+    <svg width="26" height="26" viewBox="0 0 34 34" aria-hidden="true">
+      <path d="M17 6 L33 1 L33 11 Z" fill="var(--amber)" opacity="0.85"/>
+      <rect x="12" y="8" width="10" height="22" rx="2" fill="var(--teal)"/>
+      <rect x="10" y="28" width="14" height="4" rx="1" fill="var(--deep)"/>
+      <circle cx="17" cy="9" r="3.5" fill="var(--amber)"/>
+    </svg>
+    <b>FARO</b><span class="proto">Prototyp</span>
+  </div>
+  <button type="button" class="avatar" id="btn-profile" aria-label="Profil öffnen">?</button>
+</header>
+<button type="button" class="locchip" id="loc-chip" aria-controls="map-focus-form"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.4 7-12a7 7 0 1 0-14 0c0 5.6 7 12 7 12z" fill="var(--amber)" stroke="var(--amber-strong)" stroke-width="1.5"/><circle cx="12" cy="10" r="2.6" fill="var(--surface)"/></svg><span id="loc-text">Gebiet wählen</span></button>
+
+<section class="sheet" id="sheet" data-state="peek" data-role="kunde" aria-label="Aufträge">
+  <div class="grab" id="grab" role="button" tabindex="0" aria-label="Bereich vergrößern" aria-expanded="false"><span></span></div>
+  <div class="sheet-body" id="sheet-body">
+    <div class="roles" role="group" aria-label="Rolle wählen">
+      <button type="button" id="role-kunde" aria-pressed="true">Ich brauche Hilfe</button>
+      <button type="button" id="role-helfer" aria-pressed="false">Ich helfe</button>
+    </div>
+    <p class="banner" id="banner" hidden></p>
+  <div class="card" id="profile">
+      <div class="field" id="profile-edit">
+        <label for="p-name">Wie sollen andere dich sehen?</label>
+        <div class="inline">
+          <input type="text" id="p-name" maxlength="24" placeholder="z. B. Ana M." autocomplete="given-name">
+          <button type="button" class="btn primary" id="p-save">Speichern</button>
+        </div>
+        <span class="hint">Vorname und Anfangsbuchstabe reichen.</span>
+      </div>
+      <p class="who" id="profile-show" hidden></p>
+    </div>
+
+
+    <section id="view-kunde" class="stack" aria-labelledby="h-kunde">
+      <button type="button" class="askbar" id="btn-new" aria-expanded="false" aria-controls="form-new">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <span>Was soll erledigt werden?</span>
+      </button>
+      <div class="tiles" id="cat-tiles" role="group" aria-label="Schnell auswählen"></div>
+      <form id="form-new" class="card" hidden novalidate>
+        <h3>Was soll erledigt werden?</h3>
+        <div class="field">
+          <label for="f-cat">Kategorie</label>
+          <select id="f-cat" required></select>
+          <span class="hint" id="f-cat-hint"></span>
+        </div>
+        <div class="field">
+          <span class="legend" id="l-from">Abholung</span>
+          <div class="row2">
+            <input type="text" id="f-from-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Abholung" required>
+            <input type="text" id="f-from-addr" aria-labelledby="l-from" required>
+          </div>
+        </div>
+        <div class="field" id="field-code">
+          <label for="f-code"><span id="l-code">Abholnummer</span> <span class="hint">(optional)</span></label>
+          <input type="text" id="f-code">
+          <span class="hint">Sieht der Helfer erst nach der Annahme.</span>
+        </div>
+        <div class="field">
+          <span class="legend" id="l-to">Bringen zu</span>
+          <div class="row2">
+            <input type="text" id="f-to-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Postleitzahl Ziel" required>
+            <input type="text" id="f-to-addr" aria-labelledby="l-to" required>
+          </div>
+        </div>
+        <div class="field">
+          <span class="legend" id="l-when">Erledigt bis</span>
+          <div class="row2">
+            <select id="f-day" aria-label="Tag"><option value="0">Heute</option><option value="1">Morgen</option></select>
+            <input type="time" id="f-until" value="18:00" aria-label="Uhrzeit" required>
+          </div>
+          <span class="hint">Mindestens 30 Minuten ab jetzt. Danach läuft der Auftrag automatisch ab.</span>
+        </div>
+        <div class="field" id="field-size">
+          <span class="legend" id="l-size">Größe</span>
+          <div class="sizes" role="radiogroup" aria-labelledby="l-size" id="f-sizes"></div>
+        </div>
+        <div class="field">
+          <label for="f-desc">Beschreibung <span class="hint">(optional)</span></label>
+          <textarea id="f-desc" maxlength="300" placeholder="z. B. Abholung an der Info-Theke im Erdgeschoss"></textarea>
+        </div>
+        <div class="field" id="field-list" hidden>
+          <label for="f-list">Einkaufsliste</label>
+          <textarea id="f-list" maxlength="600" placeholder="Eine Sache pro Zeile, z. B.&#10;2 Bio-Bananen&#10;1 Vollkornbrot&#10;Hustenbonbons (ohne Medikamente)"></textarea>
+          <span class="hint">Schreib einfach auf, was du brauchst. Gründe musst du nicht angeben.</span>
+        </div>
+        <div class="field" id="field-budget" hidden>
+          <label for="f-budget">Mein Limit für den Einkauf (€)</label>
+          <input type="text" id="f-budget" inputmode="decimal" value="30">
+          <span class="hint">Höchstens 50 €. Bezahlt wird nur der Betrag auf dem Kassenbon.</span>
+        </div>
+        <div class="field" id="field-subst" hidden>
+          <span class="legend" id="l-subst">Wenn etwas fehlt</span>
+          <div class="sizes" role="radiogroup" aria-labelledby="l-subst">
+            <label><input type="radio" name="subst" value="none"><strong>Kein Ersatz</strong><span>einfach weglassen</span></label>
+            <label><input type="radio" name="subst" value="similar" checked><strong>Ähnliches</strong><span>ist okay</span></label>
+            <label><input type="radio" name="subst" value="ask"><strong>Frag mich</strong><span>im Chat</span></label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="f-paid"> <span id="t-paid">Alles ist bereits bezahlt.</span></label>
+        <label class="check"><input type="checkbox" id="f-allowed"> Keine verbotenen Artikel (Medikamente, Alkohol, Tabak, Bargeld, Ausweise, Gefahrgut).</label>
+        <div class="price" id="f-price" aria-live="polite"></div>
+        <div class="err" id="f-err" role="alert" hidden></div>
+        <div class="actions">
+          <button type="submit" class="btn accent">Auftrag veröffentlichen</button>
+          <button type="button" class="btn ghost" id="btn-cancel-form">Abbrechen</button>
+        </div>
+      </form>
+
+      <h2 id="h-kunde">Meine Aufträge</h2>
+      <div id="list-kunde" class="stack"></div>
+      <div id="done-kunde" class="stack"></div>
+    </section>
+
+    <section class="mapinfo stack" id="map-panel" aria-labelledby="map-title">
+      <h2 id="map-title">Karte</h2>
+      <form class="inline" id="map-focus-form" novalidate>
+        <input type="text" id="m-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Karte um diese Postleitzahl zeigen">
+        <button type="submit" class="btn small">Gebiet anzeigen</button>
+      </form>
+      <p class="legend" id="map-legend"></p>
+      <div class="chips" id="map-chips" role="group" aria-label="Gebiete"></div>
+      <p class="note" id="map-sheet" aria-live="polite"></p>
+    </section>
+
+    <section id="view-helfer" class="stack" hidden aria-labelledby="h-helfer">
+    <div class="card" id="area">
+        <div id="area-edit" class="field">
+          <span class="legend" id="l-area">Mein Gebiet</span>
+          <div class="row2">
+            <input type="text" id="a-plz" inputmode="numeric" maxlength="5" placeholder="PLZ" aria-label="Deine Postleitzahl">
+            <select id="a-range" aria-label="Umkreis">
+              <option value="exact">Nur diese PLZ</option>
+              <option value="near">Umgebung (gleiche ersten 3 Ziffern)</option>
+              <option value="region" selected>Region (gleiche ersten 2 Ziffern)</option>
+            </select>
+          </div>
+          <button type="button" class="btn primary" id="a-save">Gebiet speichern</button>
+          <span class="hint">Zum Ausprobieren: PLZ 10178 und „Region“ zeigt die Berliner Beispielaufträge.</span>
+        </div>
+        <p class="who" id="area-show" hidden></p>
+      </div>
+      <div class="earn" id="earn"></div>
+      <h2 id="h-helfer">Meine Einsätze</h2>
+      <div id="list-mine" class="stack"></div>
+      <h2 id="h-market">Aufträge in deinem Gebiet</h2>
+      <p class="note">Du entscheidest selbst, was du annimmst. Kein Zeitplan, keine Nachteile beim Ablehnen. Genaue Adressen siehst du erst nach der Annahme.</p>
+      <div id="list-market" class="stack"></div>
+    </section>
+
+    <p class="foot">Prototyp zum Ausprobieren: keine echten Zahlungen, Beispielpreise. Alle Tester sehen dieselben Aufträge. Bitte keine echten Daten eingeben. Karte: Lage der Gebiete nach PLZ-Mittelpunkt (WZB plz_geocoord, Apache-2.0); Häuser und Bäume sind Dekoration. GPS kommt in der echten App.</p>
+  </div>
+</section>
+
+<div class="toast" aria-live="polite"><p id="toast" hidden></p></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6.0.4/dist/d3-delaunay.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var BUDGET_MAX = 5000;
+  var CATS = {
+    purchase_errand: { de: "Einkaufen", hint: "Jemand aus der Nachbarschaft kauft für dich ein: Supermarkt, Bäckerei, Drogerie. Bezahlt wird mit einer Einmal-Karte mit deinem Limit (im Prototyp simuliert).",
+      from: "Geschäft", fromPh: "z. B. Lidl, Musterstraße 1 oder deine Bäckerei", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
+      code: null, sizes: true, proof: "pin", purchase: true,
+      paid: "Ich zahle den Betrag laut Kassenbon bis zu meinem Limit. Das Geschäft nimmt Kartenzahlung." },
+    pickup_click_collect: { de: "Click & Collect abholen", hint: "Bezahlte Bestellung im Geschäft abholen und zu dir bringen.",
+      from: "Geschäft", fromPh: "Name und Adresse des Geschäfts", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
+      code: "Bestell- oder Abholnummer", codePh: "z. B. 4711-2290", sizes: true, proof: "pin",
+      paid: "Die Bestellung ist bezahlt. An der Kasse ist nichts mehr zu zahlen." },
+    task_parcel_return: { de: "Paket zurückschicken", hint: "Fertig verpacktes Paket bei dir abholen und im Paketshop abgeben.",
+      from: "Bei dir abholen", fromPh: "Straße, Hausnummer, Name am Klingelschild", to: "Abgeben bei", toPh: "z. B. DHL-Paketshop, Musterstraße 5",
+      code: null, sizes: true, proof: "receipt",
+      paid: "Das Paket ist verpackt, verschlossen und frankiert (Retourenlabel klebt drauf)." },
+    task_parcel_pickup: { de: "Paket abholen", hint: "Paket im Paketshop, in der Filiale oder an der Packstation abholen.",
+      from: "Abholen bei", fromPh: "z. B. Hermes-Paketshop, Musterstraße 8", to: "Zu dir", toPh: "Straße, Hausnummer, Name am Klingelschild",
+      code: "Abholcode oder Sendungsnummer", codePh: "z. B. 3S1234567890", sizes: true, proof: "pin",
+      paid: "Keine Nachnahme. Es ist nichts zu zahlen." },
+    task_key_handover: { de: "Schlüssel übergeben", hint: "Schlüssel persönlich von A nach B bringen.",
+      from: "Schlüssel abholen bei", fromPh: "Adresse und Name", to: "Übergeben an", toPh: "Adresse und Name der Person",
+      code: null, sizes: false, proof: "pin", paid: "Es ist nichts zu zahlen." },
+    task_documents: { de: "Dokumente überbringen", hint: "Verschlossenen Umschlag persönlich übergeben.",
+      from: "Umschlag abholen bei", fromPh: "Adresse und Name", to: "Übergeben an", toPh: "Adresse und Name der Person",
+      code: null, sizes: false, proof: "pin", paid: "Der Umschlag ist verschlossen. Es ist nichts zu zahlen." },
+    task_repair_service: { de: "Reparatur & Reinigung", hint: "Etwas zur Reparatur oder Reinigung bringen oder dort abholen.",
+      from: "Abholen bei", fromPh: "z. B. Schuhmacherei oder deine Adresse", to: "Bringen zu", toPh: "z. B. deine Adresse oder die Werkstatt",
+      code: "Abholschein-Nummer", codePh: "z. B. 318", sizes: true, proof: "pin",
+      paid: "Die Reparatur ist bezahlt oder wird direkt an die Werkstatt bezahlt." }
+  };
+  var SIZES = {
+    S: { de: "Klein", hint: "passt in eine Tasche", reward: 600 },
+    M: { de: "Mittel", hint: "passt in einen Rucksack", reward: 800 },
+    L: { de: "Groß", hint: "große Tasche, max. 10 kg", reward: 1000 }
+  };
+  var FEE = 150;
+  var STATUS = {
+    published: { de: "Sucht Helfer", tone: "wait", step: 1 },
+    accepted: { de: "Angenommen", tone: "active", step: 2 },
+    picked_up: { de: "Abgeholt", tone: "active", step: 3 },
+    delivered: { de: "Zugestellt", tone: "deliv", step: 4 },
+    completed: { de: "Abgeschlossen", tone: "ok", step: 5 },
+    expired: { de: "Abgelaufen", tone: "off", step: 0 },
+    cancelled: { de: "Storniert", tone: "off", step: 0 },
+    not_feasible: { de: "Nicht durchführbar", tone: "bad", step: 0 }
+  };
+  var STEP_TEXT = ["", "Wartet auf einen Helfer", "Helfer ist unterwegs zur Abholung", "Abgeholt, auf dem Weg", "Zugestellt, bitte bestätigen", "Erledigt"];
+  var SUBST = { none: "Kein Ersatz", similar: "Ähnliches ist okay", ask: "Frag mich im Chat" };
+  function centsFromInput(v) { var n = Number(String(v || "").replace(",", ".").replace(/[^0-9.]/g, "")); return isFinite(n) ? Math.round(n * 100) : NaN; }
+  var REASONS = {
+    payment_required: "An der Kasse sollte noch gezahlt werden",
+    not_ready: "Bestellung war nicht abholbereit",
+    prohibited_item: "Verbotener Artikel",
+    card_declined: "Karte abgelehnt oder nur Barzahlung",
+    other: "Anderer Grund"
+  };
+  var CHAT_STATES = ["accepted", "picked_up", "delivered"];
+  var FINISHED = ["completed", "expired", "cancelled", "not_feasible"];
+  var QUICK = {
+    helfer: ["Bin unterwegs zur Abholung", "Habe es abgeholt", "Bin gleich da", "Ich verspäte mich etwas"],
+    kunde: ["Danke!", "Bin zu Hause", "Bitte beim Nachbarn klingeln"]
+  };
+  var RANGE_DE = { exact: "nur diese PLZ", near: "Umgebung", region: "Region" };
+
+  var state = {
+    role: "kunde", me: null, name: "", errands: [], loaded: false,
+    confirm: null, pinDraft: {}, receiptDraft: {}, nfReason: {}, busy: {},
+    chatOpen: {}, chatUnsub: {}, msgs: {}, chatDraft: {},
+    area: null, showDone: false, expiring: {}, formOpened: false,
+    view: "map", mapSel: null, helfers: [], mapFocus: null
+  };
+  var store = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function euro(cents) { return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" }); }
+  function ls(key, val) {
+    try {
+      if (val === undefined) return localStorage.getItem(key);
+      localStorage.setItem(key, val);
+    } catch (e) { return null; }
+  }
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+  function cat(e) { return CATS[e.category] || CATS.pickup_click_collect; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtDeadline(e) {
+    if (!e.deadline) return "bis " + esc(e.until || "–") + " Uhr";
+    var d = new Date(e.deadline), now = new Date();
+    var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    var day = Math.floor((new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() - t0) / 86400000);
+    var when = day === 0 ? "heute" : day === 1 ? "morgen" : day === -1 ? "gestern" : pad(d.getDate()) + "." + pad(d.getMonth() + 1) + ".";
+    return when + " bis " + pad(d.getHours()) + ":" + pad(d.getMinutes()) + " Uhr";
+  }
+  function isExpired(e) { return e.status === "published" && !e.example && e.deadline && e.deadline < Date.now(); }
+  function statusOf(e) { return isExpired(e) ? "expired" : e.status; }
+  function inArea(plz) {
+    if (!state.area || !plz) return false;
+    var n = state.area.range === "exact" ? 5 : state.area.range === "near" ? 3 : 2;
+    return String(plz).slice(0, n) === state.area.plz.slice(0, n);
+  }
+  function plzKnown(plz) { return !GEO.data || !!GEO.data[plz]; }
+  function needName() {
+    if (state.name) return false;
+    toast("Bitte zuerst deinen Namen eingeben.");
+    state.askName = true; renderProfile();
+    setSheet("full");
+    setTimeout(function () { $("profile").scrollIntoView({ block: "start" }); $("p-name").focus(); }, 320);
+    return true;
+  }
+
+  /* ---------- Speicher: geteilte Datenbank oder lokal ---------- */
+  function makeDbStore(db) {
+    var col = db.collection("errands");
+    return {
+      shared: true,
+      subscribe: function (cb, onErr) {
+        return col.orderBy("createdAt", "desc").limit(300).onSnapshot(function (snap) {
+          cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
+        }, onErr);
+      },
+      add: function (d) { return col.add(d); },
+      update: function (id, patch) { return db.doc("errands/" + id).update(patch); },
+      claim: function (id, me, name) {
+        var ref = db.doc("errands/" + id);
+        return ref.acquire({ holder: me, ttlMs: 5000 }).then(function (l) {
+          if (!l.acquired) return "busy";
+          return ref.get().then(function (s) {
+            if (!s.exists || s.data().status !== "published") return "taken";
+            var now = Date.now();
+            return ref.update({ status: "accepted", helferId: me, helferName: name, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
+          });
+        });
+      },
+      subscribeMessages: function (id, cb) {
+        return db.doc("errands/" + id).collection("messages").orderBy("at", "asc").limit(100).onSnapshot(function (snap) {
+          cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
+        }, function () { cb(null); });
+      },
+      sendMessage: function (id, m) { return db.doc("errands/" + id).collection("messages").add(m); },
+      saveHelferArea: function (me, data) { return db.doc("helfers/" + me).set(data); },
+      subscribeHelfers: function (cb) {
+        return db.collection("helfers").limit(500).onSnapshot(function (snap) {
+          cb(snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }));
+        }, function () {});
+      }
+    };
+  }
+  function makeLocalStore() {
+    var items = [], msgs = {};
+    try { items = JSON.parse(ls("faro-demo-errands") || "[]"); } catch (e) { items = []; }
+    try { msgs = JSON.parse(ls("faro-demo-msgs") || "{}"); } catch (e) { msgs = {}; }
+    var subs = [], msgSubs = {};
+    function sorted() { return items.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }); }
+    function emit() { ls("faro-demo-errands", JSON.stringify(items)); subs.forEach(function (f) { f(sorted()); }); }
+    function emitMsgs(id) { ls("faro-demo-msgs", JSON.stringify(msgs)); (msgSubs[id] || []).forEach(function (f) { f((msgs[id] || []).slice()); }); }
+    var api = {
+      shared: false,
+      subscribe: function (cb) { subs.push(cb); cb(sorted()); return function () {}; },
+      add: function (d) { items.push(Object.assign({ id: "l" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, d)); emit(); return Promise.resolve(); },
+      update: function (id, patch) {
+        items = items.map(function (x) { return x.id === id ? Object.assign({}, x, patch) : x; });
+        emit();
+        return Promise.resolve();
+      },
+      claim: function (id, me, name) {
+        var x = items.filter(function (i) { return i.id === id; })[0];
+        if (!x || x.status !== "published") return Promise.resolve("taken");
+        var now = Date.now();
+        return api.update(id, { status: "accepted", helferId: me, helferName: name, acceptedAt: now, updatedAt: now }).then(function () { return "ok"; });
+      },
+      subscribeMessages: function (id, cb) {
+        (msgSubs[id] = msgSubs[id] || []).push(cb);
+        cb((msgs[id] || []).slice());
+        return function () { msgSubs[id] = (msgSubs[id] || []).filter(function (f) { return f !== cb; }); };
+      },
+      sendMessage: function (id, m) { (msgs[id] = msgs[id] || []).push(Object.assign({ id: "m" + Date.now() }, m)); emitMsgs(id); return Promise.resolve(); },
+      saveHelferArea: function () { return Promise.resolve(); },
+      subscribeHelfers: function (cb) { cb([]); return function () {}; }
+    };
+    return api;
+  }
+
+  /* ---------- Profil und Gebiet ---------- */
+  function renderProfile() {
+    var has = !!state.name;
+    $("profile-edit").hidden = has;
+    $("profile-show").hidden = !has;
+    $("profile").hidden = has || !state.askName;
+    if (has) $("profile-show").innerHTML = "<span>Du bist <b>" + esc(state.name) + "</b></span><button type=\"button\" class=\"linkbtn\" data-act=\"edit-name\">Ändern</button>";
+  }
+  function saveName() {
+    var v = $("p-name").value.trim().slice(0, 24);
+    if (v.length < 2) { toast("Bitte mindestens zwei Buchstaben eingeben."); $("p-name").focus(); return; }
+    state.name = v; state.askName = false;
+    ls("faro-demo-name", v);
+    renderProfile();
+    toast("Gespeichert. Andere sehen dich als " + v + ".");
+  }
+  function renderArea() {
+    var has = !!state.area;
+    $("area-edit").hidden = has;
+    $("area-show").hidden = !has;
+    if (has) {
+      var n = state.area.range === "exact" ? 5 : state.area.range === "near" ? 3 : 2;
+      var shown = state.area.plz.slice(0, n) + "xxxxx".slice(0, 5 - n);
+      $("area-show").innerHTML = "<span>Mein Gebiet: <b>" + esc(shown) + "</b> (" + esc(RANGE_DE[state.area.range]) + ")</span><button type=\"button\" class=\"linkbtn\" data-act=\"edit-area\">Ändern</button>";
+    }
+  }
+  function saveArea() {
+    var plz = $("a-plz").value.trim();
+    if (!/^\d{5}$/.test(plz)) { toast("Bitte eine fünfstellige PLZ eingeben."); $("a-plz").focus(); return; }
+    if (!plzKnown(plz)) { toast("Die PLZ " + plz + " gibt es in Deutschland nicht. Bitte prüfen."); $("a-plz").focus(); return; }
+    state.area = { plz: plz, range: $("a-range").value };
+    ls("faro-demo-area", JSON.stringify(state.area));
+    state.mapFocus = null; ls("faro-demo-mapfocus", "");
+    if (store && state.me) store.saveHelferArea(state.me, { plz: plz, range: state.area.range, updatedAt: Date.now() }).catch(function () {});
+    renderArea();
+    render();
+  }
+
+  /* ---------- Formular ---------- */
+  function initForm() {
+    var sel = $("f-cat");
+    Object.keys(CATS).forEach(function (k) {
+      var o = document.createElement("option");
+      o.value = k; o.textContent = CATS[k].de;
+      sel.appendChild(o);
+    });
+    var sizes = $("f-sizes");
+    Object.keys(SIZES).forEach(function (k, i) {
+      var l = document.createElement("label");
+      l.innerHTML = '<input type="radio" name="size" id="f-size-' + k + '" value="' + k + '"' + (i === 1 ? " checked" : "") + '><strong>' + esc(SIZES[k].de) + '</strong><span>' + esc(SIZES[k].hint) + "</span>";
+      sizes.appendChild(l);
+    });
+    sel.addEventListener("change", updateFormInfo);
+    $("f-budget").addEventListener("input", updateFormInfo);
+    sizes.addEventListener("change", updateFormInfo);
+    updateFormInfo();
+    $("btn-new").addEventListener("click", function () { setFormOpen($("form-new").hidden); });
+    $("btn-cancel-form").addEventListener("click", function () { setFormOpen(false); });
+    $("form-new").addEventListener("submit", onSubmit);
+  }
+  function currentSize() {
+    if (!CATS[$("f-cat").value].sizes) return "S";
+    var c = document.querySelector('input[name="size"]:checked');
+    return c ? c.value : "M";
+  }
+  function updateFormInfo() {
+    var c = CATS[$("f-cat").value];
+    $("f-cat-hint").textContent = c.hint;
+    $("l-from").textContent = c.from;
+    $("l-to").textContent = c.to;
+    $("f-from-addr").placeholder = c.fromPh;
+    $("f-to-addr").placeholder = c.toPh;
+    $("field-code").hidden = !c.code;
+    if (c.code) { $("l-code").textContent = c.code; $("f-code").placeholder = c.codePh; }
+    $("field-size").hidden = !c.sizes;
+    ["field-list", "field-budget", "field-subst"].forEach(function (id) { $(id).hidden = !c.purchase; });
+    $("t-paid").textContent = c.paid;
+    var r = SIZES[currentSize()].reward;
+    var b = c.purchase ? centsFromInput($("f-budget").value) : 0;
+    $("f-price").innerHTML =
+      (c.purchase ? "<div><span>Einkauf (höchstens, laut Kassenbon)</span><span>" + (isFinite(b) && b > 0 ? euro(b) : "–") + "</span></div>" : "") +
+      "<div><span>Vergütung für den Helfer</span><span>" + euro(r) + "</span></div>" +
+      "<div><span>FARO-Servicegebühr</span><span>" + euro(FEE) + "</span></div>" +
+      '<div class="total"><span>' + (c.purchase ? "Gesamt höchstens (Beispielpreis)" : "Gesamt (Beispielpreis)") + "</span><span>" + euro(r + FEE + (c.purchase && isFinite(b) ? b : 0)) + "</span></div>";
+  }
+  function setFormOpen(open, noFocus) {
+    $("form-new").hidden = !open;
+    $("btn-new").setAttribute("aria-expanded", open ? "true" : "false");
+    $("btn-new").hidden = open;
+    $("cat-tiles").hidden = open;
+    if (open && !noFocus) { setSheet("full"); setTimeout(function () { $("form-new").scrollIntoView({ block: "start" }); $("f-cat").focus(); }, 320); }
+    if (!open && !noFocus) setSheet("peek");
+  }
+  function prefill(e) {
+    $("f-cat").value = e.category;
+    $("f-from-plz").value = e.pickupArea || "";
+    $("f-from-addr").value = e.pickupAddress || "";
+    $("f-code").value = e.pickupCode || "";
+    $("f-to-plz").value = e.dropArea || "";
+    $("f-to-addr").value = e.dropAddress || "";
+    $("f-desc").value = e.description || "";
+    $("f-list").value = e.shoppingList || "";
+    if (e.budget) $("f-budget").value = String(e.budget / 100).replace(".", ",");
+    var s = $("f-size-" + (e.size || "M")); if (s) s.checked = true;
+    $("f-day").value = "0";
+    $("f-paid").checked = false; $("f-allowed").checked = false;
+    updateFormInfo();
+    setFormOpen(true);
+    $("form-new").scrollIntoView({ block: "start" });
+  }
+  function computeDeadline() {
+    var t = $("f-until").value;
+    if (!/^\d{2}:\d{2}$/.test(t)) return null;
+    var d = new Date();
+    d.setDate(d.getDate() + Number($("f-day").value));
+    d.setHours(Number(t.slice(0, 2)), Number(t.slice(3, 5)), 0, 0);
+    return d.getTime();
+  }
+  function onSubmit(ev) {
+    ev.preventDefault();
+    var err = $("f-err");
+    var c = CATS[$("f-cat").value];
+    var plzA = $("f-from-plz").value.trim(), plzB = $("f-to-plz").value.trim();
+    var addrA = $("f-from-addr").value.trim(), addrB = $("f-to-addr").value.trim();
+    var deadline = computeDeadline();
+    var problems = [];
+    if (!/^\d{5}$/.test(plzA)) problems.push("PLZ bei „" + c.from + "“ fehlt oder hat nicht fünf Ziffern.");
+    else if (!plzKnown(plzA)) problems.push("Die PLZ " + plzA + " gibt es in Deutschland nicht.");
+    if (!addrA) problems.push("Adresse bei „" + c.from + "“ fehlt.");
+    if (!/^\d{5}$/.test(plzB)) problems.push("PLZ bei „" + c.to + "“ fehlt oder hat nicht fünf Ziffern.");
+    else if (!plzKnown(plzB)) problems.push("Die PLZ " + plzB + " gibt es in Deutschland nicht.");
+    if (!addrB) problems.push("Adresse bei „" + c.to + "“ fehlt.");
+    if (!deadline) problems.push("Bitte eine Uhrzeit angeben.");
+    else if (deadline < Date.now() + 30 * 60000) problems.push("Die Zeit ist zu knapp oder schon vorbei. Bitte mindestens 30 Minuten ab jetzt wählen.");
+    var budget = c.purchase ? centsFromInput($("f-budget").value) : 0;
+    if (c.purchase) {
+      if (!$("f-list").value.trim()) problems.push("Bitte schreib auf, was eingekauft werden soll.");
+      if (!isFinite(budget) || budget < 500 || budget > BUDGET_MAX) problems.push("Das Limit muss zwischen 5 € und 50 € liegen.");
+    }
+    if (!$("f-paid").checked) problems.push("Bitte bestätigen: " + c.paid);
+    if (!$("f-allowed").checked) problems.push("Bitte bestätigen, dass keine verbotenen Artikel dabei sind.");
+    if (problems.length) {
+      err.innerHTML = "Bitte noch korrigieren:<ul>" + problems.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>";
+      err.hidden = false;
+      return;
+    }
+    err.hidden = true;
+    if (needName()) return;
+    if (!store || !state.me) { toast("Noch nicht verbunden. Bitte kurz warten."); return; }
+    var size = currentSize();
+    var now = Date.now();
+    var doc = {
+      category: $("f-cat").value,
+      size: size,
+      pickupArea: plzA,
+      pickupAddress: addrA,
+      pickupCode: c.code ? $("f-code").value.trim() : "",
+      dropArea: plzB,
+      dropAddress: addrB,
+      deadline: deadline,
+      description: $("f-desc").value.trim().slice(0, 300),
+      reward: SIZES[size].reward,
+      fee: FEE,
+      shoppingList: c.purchase ? $("f-list").value.trim().slice(0, 600) : "",
+      budget: c.purchase ? budget : 0,
+      substitution: c.purchase ? ((document.querySelector('input[name="subst"]:checked') || {}).value || "similar") : "",
+      receipt: null,
+      status: "published",
+      clientId: state.me,
+      clientName: state.name,
+      helferId: null,
+      helferName: null,
+      pin: String(Math.floor(1000 + Math.random() * 9000)),
+      example: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    store.add(doc).then(function () {
+      $("form-new").reset();
+      $("f-until").value = "18:00";
+      $("f-size-M").checked = true;
+      updateFormInfo();
+      setFormOpen(false);
+      toast("Auftrag veröffentlicht. Helfer im Gebiet sehen ihn jetzt.");
+    }).catch(function (e) { toast(errorText(e)); });
+  }
+
+  /* ---------- Darstellung ---------- */
+  function chip(st) { var s = STATUS[st] || STATUS.published; return '<span class="chip t-' + s.tone + '">' + esc(s.de) + "</span>"; }
+  function steps(st) {
+    var n = (STATUS[st] || {}).step || 0;
+    if (!n) return "";
+    var li = "";
+    for (var i = 1; i <= 5; i++) li += '<li class="' + (i <= n ? "on" : "") + '"></li>';
+    return '<ol class="steps" aria-label="Fortschritt: Schritt ' + n + " von 5\">" + li + '</ol><p class="steplabel">' + esc(STEP_TEXT[n]) + "</p>";
+  }
+  function route(e) {
+    var size = cat(e).sizes ? "<span>· " + esc((SIZES[e.size] || SIZES.M).de) + "</span>" : "";
+    return '<p class="route"><b>' + esc(e.pickupArea) + "</b><span aria-label=\"nach\">→</span><b>" + esc(e.dropArea) + "</b><span>· " + fmtDeadline(e) + "</span>" + size + "</p>";
+  }
+  function head(e, extraTag) {
+    return "<header><div>" + (e.example ? '<span class="tag">Beispiel</span> ' : "") + (extraTag || "") + '<div class="cat">' + esc(cat(e).de) + "</div></div>" + chip(statusOf(e)) + "</header>";
+  }
+  function confirmBox(id, kind, text, okLabel, okClass) {
+    return '<div class="confirm" role="group"><p>' + esc(text) + '</p><div class="actions"><button type="button" class="btn ' + okClass + '" data-act="' + kind + '-yes" data-id="' + esc(id) + '">' + esc(okLabel) + '</button><button type="button" class="btn ghost" data-act="confirm-no">Zurück</button></div></div>';
+  }
+  function isConfirm(id, kind) { return state.confirm && state.confirm.id === id && state.confirm.kind === kind; }
+
+  function chatBlock(e, role) {
+    if (CHAT_STATES.indexOf(e.status) < 0) return "";
+    var other = role === "kunde" ? (e.helferName || "Helfer") : (e.clientName || "Kunde");
+    var open = !!state.chatOpen[role + ":" + e.id];
+    var btn = '<button type="button" class="btn ghost small" data-act="chat" data-id="' + esc(e.id) + '" aria-expanded="' + open + '">' + (open ? "Chat schließen" : "Nachricht an " + esc(other)) + "</button>";
+    if (!open) return '<div class="actions">' + btn + "</div>";
+    var list = state.msgs[e.id];
+    var items = list == null ? '<li class="note">Chat nicht verfügbar.</li>'
+      : list.length ? list.map(function (m) {
+          return '<li class="msg' + (m.from === state.me ? " me" : "") + '"><small>' + esc(m.from === state.me ? "Du" : (m.name || "")) + "</small>" + esc(m.text) + "</li>";
+        }).join("") : '<li class="note">Noch keine Nachrichten. Schreib kurz, wenn etwas unklar ist.</li>';
+    var quick = QUICK[role].map(function (q) { return '<button type="button" class="btn small" data-act="quick" data-id="' + esc(e.id) + '" data-text="' + esc(q) + '">' + esc(q) + "</button>"; }).join("");
+    return '<div class="chat"><div class="actions">' + btn + '</div><ul class="msgs" id="msgs-' + role + "-" + esc(e.id) + '">' + items + '</ul><div class="quick">' + quick +
+      '</div><div class="inline"><input type="text" id="chat-' + role + "-" + esc(e.id) + '" data-chat="' + esc(e.id) + '" maxlength="300" placeholder="Nachricht an ' + esc(other) + '" aria-label="Nachricht an ' + esc(other) + '" value="' + esc(state.chatDraft[e.id] || "") + '"><button type="button" class="btn primary" data-act="send" data-id="' + esc(e.id) + '">Senden</button></div></div>';
+  }
+
+  function purchaseBlock(e, role) {
+    if (!e.shoppingList) return "";
+    var items = e.shoppingList.split(/\n+/).filter(Boolean).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
+    var line = e.receipt != null
+      ? "Kassenbon: <b>" + euro(e.receipt) + "</b>" + (e.budget > e.receipt ? " · nicht genutzt und nicht belastet: " + euro(e.budget - e.receipt) : "")
+      : "Limit: <b>" + euro(e.budget || 0) + "</b> · " + esc(SUBST[e.substitution] || "");
+    return '<div class="detail"><dt>Einkaufsliste</dt><dd><ul class="shop">' + items + "</ul></dd><dt>Bezahlung</dt><dd>" + line + "</dd></div>";
+  }
+  function cardBox(e) {
+    var last = String((hash32(e.id) % 9000) + 1000);
+    return '<div class="vcard" aria-label="Einmal-Karte, simuliert"><span>Einmal-Karte (simuliert)</span><strong>•••• ' + last + "</strong><small>Limit " + euro(e.budget || 0) + " · nur für diesen Einkauf · verfällt danach</small></div>";
+  }
+  function hash32(str) { var h = 2166136261; str = String(str); for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function totalFor(e) { return (e.reward || 0) + (e.fee || 0) + (e.receipt != null ? e.receipt : (e.budget || 0)); }
+  function kundeCard(e) {
+    var st = statusOf(e);
+    var acts = "";
+    if (st === "published" || st === "accepted") {
+      acts = isConfirm(e.id, "cancel")
+        ? confirmBox(e.id, "cancel", st === "accepted" ? "Ein Helfer hat schon angenommen. Trotzdem stornieren? (Im Prototyp ohne Kosten.)" : "Auftrag wirklich stornieren?", "Stornieren", "danger")
+        : '<button type="button" class="btn ghost danger" data-act="cancel" data-id="' + esc(e.id) + '">Stornieren</button>';
+    }
+    if (st === "delivered") acts = '<button type="button" class="btn primary" data-act="confirm-receipt" data-id="' + esc(e.id) + '">Erhalt bestätigen</button>';
+    if (st === "expired" || st === "not_feasible" || st === "cancelled") acts = '<button type="button" class="btn" data-act="redo" data-id="' + esc(e.id) + '">Neu aufgeben</button>';
+    var helfer = e.helferName && ["accepted", "picked_up", "delivered", "completed"].indexOf(st) >= 0
+      ? '<p class="person">Helfer: <b>' + esc(e.helferName) + "</b></p>" : "";
+    var pin = (st === "accepted" || st === "picked_up") && cat(e).proof === "pin"
+      ? '<div class="pin"><span>Übergabe-PIN</span><strong>' + esc(e.pin) + "</strong><small>Erst bei der Übergabe weitergeben, auch an die Person, die empfängt.</small></div>"
+      : "";
+    var nf = st === "not_feasible" ? '<p class="desc">Grund: ' + esc(REASONS[e.notFeasibleReason] || "–") + "</p>" : "";
+    var exp = st === "expired" ? '<p class="desc">Niemand hat den Auftrag rechtzeitig angenommen.</p>' : "";
+    return '<article class="card">' + head(e) + route(e) + steps(st) + helfer + pin + nf + exp + purchaseBlock(e, "kunde") +
+      (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      chatBlock(e, "kunde") +
+      '<footer><p class="money">' + euro(totalFor(e)) + "<small>" + (e.shoppingList && e.receipt == null ? "Gesamt höchstens, Beispielpreis" : "Gesamt, Beispielpreis") + "</small></p>" + (acts ? '<div class="actions">' + acts + "</div>" : "") + "</footer></article>";
+  }
+
+  function helferLabel(l) { return l === "Zu dir" ? "Bringen zu" : l === "Bei dir abholen" ? "Abholen beim Kunden" : l; }
+  function helferMineCard(e) {
+    var c = cat(e);
+    var detail = "";
+    if (e.status === "accepted" || e.status === "picked_up") {
+      detail = '<dl class="detail"><dt>' + esc(helferLabel(c.from)) + "</dt><dd>" + esc(e.pickupArea) + " · " + esc(e.pickupAddress) + "</dd>" +
+        (e.pickupCode ? "<dt>" + esc(c.code || "Code") + "</dt><dd>" + esc(e.pickupCode) + "</dd>" : "") +
+        "<dt>" + esc(helferLabel(c.to)) + "</dt><dd>" + esc(e.dropArea) + " · " + esc(e.dropAddress) + "</dd></dl>";
+    }
+    var acts = "";
+    if (e.status === "accepted") {
+      if (isConfirm(e.id, "nf")) {
+        var opts = Object.keys(REASONS).map(function (k) { return '<option value="' + k + '"' + (state.nfReason[e.id] === k ? " selected" : "") + ">" + esc(REASONS[k]) + "</option>"; }).join("");
+        acts = '<div class="confirm"><label for="nf-' + esc(e.id) + '"><b>Warum nicht durchführbar?</b></label><select id="nf-' + esc(e.id) + '" data-nf="' + esc(e.id) + '">' + opts + '</select><p class="note">Du zahlst niemals etwas aus. Der Auftrag wird beendet, ohne Nachteile für dich.</p><div class="actions"><button type="button" class="btn danger" data-act="nf-yes" data-id="' + esc(e.id) + '">Melden</button><button type="button" class="btn ghost" data-act="confirm-no">Zurück</button></div></div>';
+      } else if (isConfirm(e.id, "release")) {
+        acts = confirmBox(e.id, "release", "Auftrag freigeben? Ohne Nachteile für dich. Er geht zurück in die Liste.", "Freigeben", "");
+      } else if (c.purchase) {
+        var rv = state.receiptDraft[e.id] || "";
+        acts = cardBox(e) + '<div class="confirm"><label for="rc-' + esc(e.id) + '"><b>Betrag laut Kassenbon (€)</b></label><div class="pinrow"><input type="text" id="rc-' + esc(e.id) + '" data-receipt="' + esc(e.id) + '" inputmode="decimal" value="' + esc(rv) + '"><button type="button" class="btn primary" data-act="paid" data-id="' + esc(e.id) + '">Bezahlt, Bon fotografiert</button></div><p class="note">Im Prototyp ersetzt die Bestätigung das Foto. Du zahlst nie mit deinem eigenen Geld.</p></div>' +
+          '<button type="button" class="btn" data-act="nf" data-id="' + esc(e.id) + '">Nicht durchführbar</button>' +
+          '<button type="button" class="btn ghost" data-act="release" data-id="' + esc(e.id) + '">Freigeben</button>';
+      } else {
+        acts = '<button type="button" class="btn primary" data-act="pickup" data-id="' + esc(e.id) + '">Abgeholt</button>' +
+          '<button type="button" class="btn" data-act="nf" data-id="' + esc(e.id) + '">Nicht durchführbar</button>' +
+          '<button type="button" class="btn ghost" data-act="release" data-id="' + esc(e.id) + '">Freigeben</button>';
+      }
+    } else if (e.status === "picked_up") {
+      if (c.proof === "receipt") {
+        acts = '<button type="button" class="btn primary" data-act="deliver-receipt" data-id="' + esc(e.id) + '">Abgegeben, Beleg erhalten</button>';
+      } else {
+        var v = state.pinDraft[e.id] || "";
+        var hint = e.example ? '<p class="note">Beispiel-PIN: <b>' + esc(e.pin) + "</b>. Im echten Leben sagt ihn dir die Person beim Empfang.</p>" : "";
+        acts = '<div class="confirm"><label for="pin-' + esc(e.id) + '"><b>Übergabe-PIN der Person, die empfängt</b></label>' + hint + '<div class="pinrow"><input type="text" id="pin-' + esc(e.id) + '" data-pin="' + esc(e.id) + '" inputmode="numeric" maxlength="4" autocomplete="off" value="' + esc(v) + '"><button type="button" class="btn primary" data-act="deliver" data-id="' + esc(e.id) + '">Zustellen</button></div></div>';
+      }
+    } else if (e.status === "delivered") {
+      acts = '<p class="note">Wartet auf die Bestätigung von ' + esc(e.clientName || "Kunde") + ".</p>";
+    }
+    var client = e.clientName ? '<p class="person">Kunde: <b>' + esc(e.clientName) + "</b></p>" : "";
+    return '<article class="card">' + head(e) + route(e) + client + detail + purchaseBlock(e, "helfer") + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      chatBlock(e, "helfer") +
+      '<footer><p class="money">' + euro(e.reward || 0) + "<small>deine Vergütung</small></p></footer>" +
+      (acts ? '<div class="actions">' + acts + "</div>" : "") + "</article>";
+  }
+
+  function marketCard(e) {
+    var own = e.clientId === state.me;
+    return '<article class="card">' + head(e, own ? '<span class="tag">Dein eigener Auftrag</span>' : "") +
+      route(e) + (e.shoppingList ? '<p class="desc">Einkauf bis ' + euro(e.budget || 0) + " · " + e.shoppingList.split(/\n+/).filter(Boolean).length + " Positionen · Einmal-Karte</p>" : "") + (e.description ? '<p class="desc">' + esc(e.description) + "</p>" : "") +
+      '<footer><p class="money">' + euro(e.reward || 0) + '<small>Vergütung</small></p><button type="button" class="btn accent" data-act="accept" data-id="' + esc(e.id) + '"' + (state.busy[e.id] ? " disabled" : "") + ">Annehmen</button></footer></article>";
+  }
+
+  function render() {
+    var kunde = state.role === "kunde";
+    $("role-kunde").setAttribute("aria-pressed", kunde ? "true" : "false");
+    $("role-helfer").setAttribute("aria-pressed", kunde ? "false" : "true");
+    $("view-kunde").hidden = !kunde;
+    $("view-helfer").hidden = kunde;
+    $("sheet").setAttribute("data-role", kunde ? "kunde" : "helfer");
+    var ini = (state.name || "").split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
+    $("btn-profile").textContent = ini || "?";
+
+    var active = document.activeElement && document.activeElement.id;
+    var scrolls = {};
+    document.querySelectorAll(".msgs").forEach(function (m) { scrolls[m.id] = m.scrollTop + m.clientHeight >= m.scrollHeight - 4 ? "bottom" : m.scrollTop; });
+    var me = state.me;
+    var loading = '<p class="empty">Aufträge werden geladen …</p>';
+
+    var mineK = state.errands.filter(function (e) { return me && e.clientId === me; });
+    var openK = mineK.filter(function (e) { return FINISHED.indexOf(statusOf(e)) < 0; });
+    var doneK = mineK.filter(function (e) { return FINISHED.indexOf(statusOf(e)) >= 0; });
+    $("list-kunde").innerHTML = !state.loaded ? loading : (openK.length ? openK.map(kundeCard).join("") :
+      '<p class="empty">Keine laufenden Aufträge. Tippe auf „Neuer Auftrag“ und lass z. B. eine Click-&-Collect-Bestellung abholen.</p>');
+    $("done-kunde").innerHTML = doneK.length
+      ? '<div class="actions"><button type="button" class="btn ghost" data-act="toggle-done" aria-expanded="' + state.showDone + '">' + (state.showDone ? "Beendete Aufträge ausblenden" : "Beendete Aufträge anzeigen (" + doneK.length + ")") + "</button></div>" + (state.showDone ? doneK.map(kundeCard).join("") : "")
+      : "";
+
+    var mineH = state.errands.filter(function (e) { return me && e.helferId === me && ["accepted", "picked_up", "delivered", "completed"].indexOf(e.status) >= 0; });
+    var openH = mineH.filter(function (e) { return e.status !== "completed"; });
+    $("list-mine").innerHTML = !state.loaded ? loading : (openH.length ? openH.map(helferMineCard).join("") :
+      '<p class="empty">Du hast gerade keinen Einsatz. Nimm unten einen Auftrag an, wenn du Zeit hast.</p>');
+
+    var done = mineH.filter(function (e) { return e.status === "completed"; });
+    var sum = done.reduce(function (a, e) { return a + (e.reward || 0); }, 0);
+    $("earn").innerHTML = '<p class="money">' + euro(sum) + "<small>verdient im Prototyp · " + done.length + (done.length === 1 ? " Auftrag" : " Aufträge") + '</small></p><p class="note">Keine echte Auszahlung. Für echtes Geld brauchst du später ein Kleingewerbe.</p>';
+
+    var market = state.errands.filter(function (e) { return statusOf(e) === "published" && inArea(e.pickupArea) && (state.view !== "map" || !state.mapSel || e.pickupArea === state.mapSel); });
+    $("h-market").textContent = state.view === "map" && state.mapSel ? "Aufträge in " + state.mapSel : "Aufträge in deinem Gebiet";
+    $("list-market").innerHTML = !state.loaded ? loading
+      : !state.area ? '<p class="empty">Speichere oben dein Gebiet, dann siehst du die Aufträge in deiner Nähe.</p>'
+      : market.length ? market.map(marketCard).join("")
+      : '<p class="empty">Gerade keine offenen Aufträge in deinem Gebiet. Schau später wieder vorbei oder vergrößere den Umkreis.</p>';
+
+    if (active) { var el = $(active); if (el) { el.focus(); if (el.setSelectionRange && el.value) { try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} } } }
+    Object.keys(scrolls).forEach(function (k) { var m = $(k); if (m) m.scrollTop = scrolls[k] === "bottom" ? m.scrollHeight : scrolls[k]; });
+    document.querySelectorAll(".msgs").forEach(function (m) { if (!(m.id in scrolls)) m.scrollTop = m.scrollHeight; });
+    renderMap();
+  }
+
+
+  /* ---------- 3D-Karte: echte Lage der PLZ-Gebiete, keine genauen Personen-Standorte ---------- */
+  var GEO = { data: null, loading: false, failed: false };
+  function loadGeo() {
+    if (GEO.data || GEO.loading || GEO.failed) return;
+    GEO.loading = true;
+    fetch("plz.json").then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+      .then(function (d) { GEO.data = d; }).catch(function () { GEO.failed = true; })
+      .then(function () { GEO.loading = false; render(); });
+  }
+  function km(a, b) {
+    var x = (b[1] - a[1]) * Math.cos(((a[0] + b[0]) / 2) * Math.PI / 180) * 111.32, y = (b[0] - a[0]) * 110.57;
+    return Math.sqrt(x * x + y * y);
+  }
+  function shortName(n) { return String(n || "").replace(/^Berlin |^Hamburg |^München |^Köln |^Frankfurt am Main /, ""); }
+
+  var Map3D = (function () {
+    var ok = !!(window.THREE && window.THREE.OrbitControls && window.d3 && window.d3.Delaunay);
+    var renderer = null, scene, camera, controls, root, clickables = [], anims = [], sig = "", running = false, onPick = null, lastData = null, tileRefs = {}, curSel = null, inset = 0, paused = false;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function el() { return $("map3d"); }
+    function tok(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888888"; }
+    function col(n) { return new THREE.Color(tok(n)); }
+    function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+    function rng(seed) { return function () { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }; }
+    function isDark() { var c = new THREE.Color(tok("--bg")); var hsl = {}; c.getHSL(hsl); return hsl.l < 0.3; }
+
+    /* Zeichen-Helfer für Beschriftungen und Symbole */
+    function canvasSprite(w, h, paint, worldH) {
+      var c = document.createElement("canvas"); c.width = w; c.height = h;
+      paint(c.getContext("2d"), w, h);
+      var t = new THREE.CanvasTexture(c); t.anisotropy = 4;
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true }));
+      sp.scale.set(worldH * w / h, worldH, 1); sp.renderOrder = 10;
+      return sp;
+    }
+    function pill(g, w, h, r, fill, stroke) {
+      g.beginPath(); g.moveTo(r, 2); g.lineTo(w - r, 2); g.arcTo(w - 2, 2, w - 2, r, r - 2); g.lineTo(w - 2, h - r); g.arcTo(w - 2, h - 2, w - r, h - 2, r - 2);
+      g.lineTo(r, h - 2); g.arcTo(2, h - 2, 2, h - r, r - 2); g.lineTo(2, r); g.arcTo(2, 2, r, 2, r - 2); g.closePath();
+      g.fillStyle = fill; g.fill(); if (stroke) { g.lineWidth = 3; g.strokeStyle = stroke; g.stroke(); }
+    }
+    function districtLabel(plz, name, strong) {
+      var two = !!name;
+      return canvasSprite(two ? 360 : 200, two ? 120 : 72, function (g, w, h) {
+        pill(g, w, h, 24, tok("--surface"), strong ? tok("--amber-strong") : tok("--line"));
+        g.fillStyle = tok("--ink"); g.textAlign = "center"; g.textBaseline = "middle";
+        g.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.fillText(plz, w / 2, two ? 42 : h / 2 + 2);
+        if (two) { g.fillStyle = tok("--muted"); g.font = "400 30px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.fillText(name.length > 20 ? name.slice(0, 19) + "…" : name, w / 2, 88); }
+      }, two ? 0.42 : 0.26);
+    }
+    function icon(g, cat, cx, cy, s, color) {
+      g.strokeStyle = color; g.fillStyle = color; g.lineWidth = s * 0.12; g.lineCap = "round"; g.lineJoin = "round";
+      if (cat === "pickup_click_collect") {
+        g.strokeRect(cx - s * 0.38, cy - s * 0.15, s * 0.76, s * 0.6);
+        g.beginPath(); g.arc(cx, cy - s * 0.15, s * 0.2, Math.PI, 0); g.stroke();
+      } else if (cat === "task_parcel_return" || cat === "task_parcel_pickup") {
+        g.strokeRect(cx - s * 0.38, cy - s * 0.3, s * 0.76, s * 0.66);
+        g.beginPath(); g.moveTo(cx - s * 0.38, cy - s * 0.08); g.lineTo(cx + s * 0.38, cy - s * 0.08); g.moveTo(cx, cy - s * 0.3); g.lineTo(cx, cy - s * 0.08); g.stroke();
+        if (cat === "task_parcel_return") { g.beginPath(); g.moveTo(cx + s * 0.18, cy + s * 0.18); g.lineTo(cx - s * 0.16, cy + s * 0.18); g.moveTo(cx - s * 0.05, cy + s * 0.08); g.lineTo(cx - s * 0.16, cy + s * 0.18); g.lineTo(cx - s * 0.05, cy + s * 0.28); g.stroke(); }
+      } else if (cat === "task_key_handover") {
+        g.beginPath(); g.arc(cx - s * 0.2, cy, s * 0.18, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.moveTo(cx - s * 0.02, cy); g.lineTo(cx + s * 0.4, cy); g.moveTo(cx + s * 0.28, cy); g.lineTo(cx + s * 0.28, cy + s * 0.14); g.moveTo(cx + s * 0.4, cy); g.lineTo(cx + s * 0.4, cy + s * 0.16); g.stroke();
+      } else if (cat === "task_documents") {
+        g.strokeRect(cx - s * 0.4, cy - s * 0.26, s * 0.8, s * 0.52);
+        g.beginPath(); g.moveTo(cx - s * 0.4, cy - s * 0.26); g.lineTo(cx, cy + s * 0.06); g.lineTo(cx + s * 0.4, cy - s * 0.26); g.stroke();
+      } else if (cat === "purchase_errand") {
+        g.beginPath(); g.moveTo(cx - s * 0.42, cy - s * 0.32); g.lineTo(cx - s * 0.3, cy - s * 0.32); g.lineTo(cx - s * 0.18, cy + s * 0.18); g.lineTo(cx + s * 0.32, cy + s * 0.18); g.lineTo(cx + s * 0.4, cy - s * 0.16); g.lineTo(cx - s * 0.24, cy - s * 0.16); g.stroke();
+        g.beginPath(); g.arc(cx - s * 0.12, cy + s * 0.34, s * 0.07, 0, Math.PI * 2); g.arc(cx + s * 0.26, cy + s * 0.34, s * 0.07, 0, Math.PI * 2); g.fill();
+      } else if (cat === "person") {
+        g.beginPath(); g.arc(cx, cy - s * 0.18, s * 0.17, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(cx - s * 0.32, cy + s * 0.38); g.quadraticCurveTo(cx - s * 0.3, cy + s * 0.02, cx, cy + s * 0.02); g.quadraticCurveTo(cx + s * 0.3, cy + s * 0.02, cx + s * 0.32, cy + s * 0.38); g.closePath(); g.fill();
+      } else {
+        g.beginPath(); g.arc(cx - s * 0.16, cy - s * 0.16, s * 0.16, Math.PI * 0.25, Math.PI * 1.9); g.stroke();
+        g.beginPath(); g.moveTo(cx - s * 0.04, cy - s * 0.04); g.lineTo(cx + s * 0.34, cy + s * 0.34); g.stroke();
+      }
+    }
+    function pinBadge(cat, count) {
+      return canvasSprite(count > 1 ? 196 : 128, 128, function (g, w, h) {
+        g.fillStyle = tok("--surface"); g.beginPath(); g.arc(64, 64, 52, 0, Math.PI * 2); g.fill();
+        g.lineWidth = 5; g.strokeStyle = tok("--amber-strong"); g.stroke();
+        icon(g, cat, 64, 66, 64, tok("--deep"));
+        if (count > 1) {
+          g.fillStyle = tok("--deep"); g.beginPath(); g.arc(156, 38, 34, 0, Math.PI * 2); g.fill();
+          g.fillStyle = tok("--bg"); g.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(String(count), 156, 40);
+        }
+      }, 0.44);
+    }
+    function helferBadge(n) {
+      var text = n + " Helfer";
+      return canvasSprite(260, 96, function (g, w, h) {
+        pill(g, w, h, 46, tok("--teal"), null);
+        icon(g, "person", 52, 50, 56, tok("--teal-ink"));
+        g.fillStyle = tok("--teal-ink"); g.font = "700 38px 'Atkinson Hyperlegible', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(text, 92, 50);
+      }, 0.32);
+    }
+
+    /* Geometrie */
+    function clipConvex(poly, clip) {
+      var out = poly;
+      for (var i = 0; i < clip.length && out.length; i++) {
+        var a = clip[i], b = clip[(i + 1) % clip.length], inp = out; out = [];
+        var inside = function (p) { return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= 0; };
+        for (var j = 0; j < inp.length; j++) {
+          var p = inp[j], q = inp[(j + 1) % inp.length], ip = inside(p), iq = inside(q);
+          if (ip) out.push(p);
+          if (ip !== iq) {
+            var dx = q[0] - p[0], dy = q[1] - p[1], ex = b[0] - a[0], ey = b[1] - a[1];
+            var t = (ex * (a[1] - p[1]) - ey * (a[0] - p[0])) / (ex * dy - ey * dx);
+            out.push([p[0] + t * dx, p[1] + t * dy]);
+          }
+        }
+      }
+      return out;
+    }
+    function area(poly) { var s = 0; for (var i = 0; i < poly.length; i++) { var a = poly[i], b = poly[(i + 1) % poly.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; }
+    function centroid(poly) { var x = 0, y = 0; poly.forEach(function (p) { x += p[0]; y += p[1]; }); return [x / poly.length, y / poly.length]; }
+    function inPoly(p, poly) {
+      var c = false;
+      for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        if (((poly[i][1] > p[1]) !== (poly[j][1] > p[1])) && (p[0] < (poly[j][0] - poly[i][0]) * (p[1] - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0])) c = !c;
+      }
+      return c;
+    }
+
+    function init() {
+      if (renderer || !ok) return !!renderer;
+      try { renderer = new THREE.WebGLRenderer({ antialias: true }); } catch (e) { ok = false; return false; }
+      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+      renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      el().insertBefore(renderer.domElement, el().firstChild);
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = !reduce; controls.dampingFactor = 0.08; controls.enablePan = false;
+      controls.minPolarAngle = 0.25; controls.maxPolarAngle = 1.1;
+      controls.addEventListener("change", function () { if (!running) draw(); });
+      var down = null;
+      renderer.domElement.addEventListener("pointerdown", function (ev) { down = { x: ev.clientX, y: ev.clientY }; });
+      renderer.domElement.addEventListener("pointerup", function (ev) {
+        if (!down || Math.abs(ev.clientX - down.x) + Math.abs(ev.clientY - down.y) > 6) return;
+        var r = renderer.domElement.getBoundingClientRect();
+        var v = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+        var rc = new THREE.Raycaster(); rc.setFromCamera(v, camera);
+        var hit = rc.intersectObjects(clickables, true)[0];
+        var o = hit && hit.object; while (o && !o.userData.plz) o = o.parent;
+        if (o && onPick) onPick(o.userData.plz);
+      });
+      window.addEventListener("resize", resize);
+      var re = function () { sig = ""; if (lastData) build(lastData); };
+      if (window.matchMedia) { var mq = window.matchMedia("(prefers-color-scheme: dark)"); if (mq.addEventListener) mq.addEventListener("change", re); }
+      new MutationObserver(re).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      return true;
+    }
+    function resize() {
+      if (!renderer) return;
+      var w = el().clientWidth, h = el().clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false); camera.aspect = w / h;
+      var top = Math.min(110, h * 0.15), off = Math.round((inset - top) / 2);
+      if (inset > 0) camera.setViewOffset(w, h, 0, off, w, h); else camera.clearViewOffset();
+      camera.updateProjectionMatrix(); draw();
+    }
+    function fit() {
+      var W = el().clientWidth || 1, H = el().clientHeight || 1, top = Math.min(110, H * 0.15);
+      var vis = Math.max(120, H - inset - top), tv = Math.tan(camera.fov * Math.PI / 360);
+      var need = 7.0 / Math.min(tv * vis / H, tv * W / H);
+      var d = Math.min(60, Math.max(12, need * 0.9));
+      var dir = new THREE.Vector3(0, 13.6, 9.4).normalize();
+      camera.position.copy(dir.multiplyScalar(d)); controls.maxDistance = d * 1.4; controls.update();
+      if (scene && scene.fog) { scene.fog.near = d * 1.05; scene.fog.far = d * 2.2; }
+    }
+    function draw() { if (renderer) renderer.render(scene, camera); }
+    function loop(t) {
+      if (!running) return;
+      anims.forEach(function (a) { a(t / 1000); });
+      controls.update(); draw();
+      requestAnimationFrame(loop);
+    }
+    function clear() {
+      if (!root) return;
+      scene.remove(root);
+      root.traverse(function (o) { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
+      root = null; clickables = []; anims = []; tileRefs = {}; curSel = null;
+    }
+    function select(plz) {
+      if (curSel === plz) return;
+      [curSel, plz].forEach(function (k) {
+        var r = k && tileRefs[k]; if (!r) return;
+        var on = k === plz; r.edges.visible = on; r.group.position.y = on ? 0.06 : 0;
+      });
+      curSel = plz; draw();
+    }
+
+    function build(data) {
+      lastData = data;
+      if (!init()) return false;
+      var s2 = JSON.stringify(data, function (k, v) { return k === "selected" ? undefined : v; }) + document.documentElement.getAttribute("data-theme") + isDark();
+      if (s2 === sig) { resize(); select(data.selected || null); return true; }
+      sig = s2; clear();
+      var dark = isDark();
+      root = new THREE.Group(); scene.add(root);
+      scene.background = col("--surface-2");
+      scene.fog = new THREE.Fog(col("--surface-2"), 22, 42);
+      root.add(new THREE.HemisphereLight(0xffffff, col("--deep"), dark ? 0.5 : 0.55));
+      var sun = new THREE.DirectionalLight(0xffffff, dark ? 0.5 : 0.7);
+      sun.position.set(-4, 10, 6); sun.castShadow = true; var sm = (el().clientWidth || 400) < 600 ? 1024 : 2048; sun.shadow.mapSize.set(sm, sm); sun.shadow.bias = -0.0008;
+      var sc = sun.shadow.camera; sc.left = -9; sc.right = 9; sc.top = 9; sc.bottom = -9; sc.near = 1; sc.far = 40;
+      root.add(sun);
+
+      /* Projektion: km um den Mittelpunkt, Norden = -z */
+      var c0 = [data.center.lat, data.center.lng], R = data.radiusKm, S = 6 / R;
+      function proj(lat, lng) { return [(lng - c0[1]) * Math.cos(c0[0] * Math.PI / 180) * 111.32 * S, (lat - c0[0]) * 110.57 * S]; }
+      var pts = data.tiles.map(function (t) { return proj(t.lat, t.lng); });
+      var circle = []; for (var i = 0; i < 64; i++) { var a = (i / 64) * Math.PI * 2; circle.push([Math.cos(a) * 6.4, Math.sin(a) * 6.4]); }
+      var vor = window.d3.Delaunay.from(pts).voronoi([-8, -8, 8, 8]);
+
+      var base = new THREE.Mesh(new THREE.CylinderGeometry(6.55, 6.75, 0.3, 96), new THREE.MeshStandardMaterial({ color: dark ? col("--surface") : col("--deep-soft"), roughness: 1 }));
+      base.position.y = -0.15; base.receiveShadow = true; root.add(base);
+      var rim = new THREE.Mesh(new THREE.TorusGeometry(6.6, 0.04, 8, 128), new THREE.MeshStandardMaterial({ color: col("--deep") }));
+      rim.rotation.x = Math.PI / 2; rim.position.y = 0.0; root.add(rim);
+
+      var mat = {
+        land: new THREE.MeshStandardMaterial({ color: dark ? col("--line") : col("--surface"), roughness: 0.85 }),
+        focus: new THREE.MeshStandardMaterial({ color: col("--amber-soft"), roughness: 0.85 }),
+        busy: new THREE.MeshStandardMaterial({ color: col("--teal-soft"), roughness: 0.85 }),
+        win: new THREE.MeshStandardMaterial({ color: col("--amber"), emissive: col("--amber"), emissiveIntensity: dark ? 0.9 : 0.1 }),
+        tree: new THREE.MeshStandardMaterial({ color: col("--teal"), roughness: 0.9 }),
+        edge: new THREE.LineBasicMaterial({ color: col("--amber-strong") })
+      };
+      var bMats = (dark ? ["--deep-soft", "--surface-2", "--teal-soft", "--surface"] : ["--surface-2", "--deep-soft", "--surface-2", "--deep", "--teal-soft"])
+        .map(function (n) { return new THREE.MeshStandardMaterial({ color: col(n), roughness: 0.75 }); });
+
+      data.tiles.forEach(function (t, idx) {
+        var cell = vor.cellPolygon(idx); if (!cell) return;
+        cell = cell.slice(0, -1);
+        if (area(cell) < 0) cell.reverse();
+        cell = clipConvex(cell, circle); if (cell.length < 3) return;
+        var cc = centroid(cell);
+        var inset = cell.map(function (p) { var dx = p[0] - cc[0], dy = p[1] - cc[1], d = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.max(0.5, (d - 0.07) / d); return [cc[0] + dx * k, cc[1] + dy * k]; });
+        var g = new THREE.Group(); g.userData.plz = t.plz; root.add(g); clickables.push(g);
+        var h = t.focus ? 0.26 : t.errands || t.helfers ? 0.2 : 0.14;
+        var shape = new THREE.Shape(inset.map(function (p) { return new THREE.Vector2(p[0], p[1]); }));
+        var geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 2 });
+        geo.rotateX(-Math.PI / 2);
+        var m = new THREE.Mesh(geo, t.focus ? mat.focus : (t.errands || t.helfers) ? mat.busy : mat.land);
+        m.castShadow = true; m.receiveShadow = true; g.add(m);
+        var lines = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), mat.edge);
+        lines.position.y = 0.005; lines.visible = false; g.add(lines);
+        tileRefs[t.plz] = { group: g, edges: lines };
+        var top = h + 0.03;
+        /* Häuser und Bäume: dekorativ, keine echten Gebäude */
+        var rand = rng(hash(t.plz)), bb = inset.reduce(function (a, p) { return [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.max(a[2], p[0]), Math.max(a[3], p[1])]; }, [99, 99, -99, -99]);
+        var nb = Math.min(12, Math.max(3, Math.round(Math.abs(area(inset)) * 5))), placed = 0, tries = 0;
+        while (placed < nb && tries++ < 120) {
+          var p = [bb[0] + rand() * (bb[2] - bb[0]), bb[1] + rand() * (bb[3] - bb[1])];
+          var shrunk = inset.map(function (q) { return [cc[0] + (q[0] - cc[0]) * 0.8, cc[1] + (q[1] - cc[1]) * 0.8]; });
+          if (!inPoly(p, shrunk)) continue;
+          if (t.focus && Math.hypot(p[0] - cc[0], p[1] - cc[1]) < 0.35) continue;
+          placed++;
+          if (rand() < 0.22) {
+            var tr = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.2, 7), mat.tree); tr.position.set(p[0], top + 0.1, -p[1]); tr.castShadow = true; g.add(tr);
+            continue;
+          }
+          var w = 0.1 + rand() * 0.14, bh = 0.08 + rand() * (t.focus ? 0.3 : 0.45);
+          var box = new THREE.Mesh(new THREE.BoxGeometry(w, bh, w * (0.7 + rand() * 0.8)), bMats[Math.floor(rand() * bMats.length)]);
+          box.position.set(p[0], top + bh / 2, -p[1]); box.rotation.y = rand() * Math.PI; box.castShadow = true; box.receiveShadow = true; g.add(box);
+          if (bh > 0.3) { var win = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 0.025, w * 0.4), mat.win); win.position.set(p[0], top + bh * 0.72, -p[1]); win.rotation.y = box.rotation.y; g.add(win); }
+        }
+        var strong = t.focus || t.errands || t.helfers;
+        var lbl = districtLabel(t.plz, strong ? shortName(t.name) : "", false);
+        lbl.position.set(cc[0], top + (strong ? 0.42 : 0.25), -cc[1]); g.add(lbl);
+
+        if (t.focus) {
+          var lh = new THREE.Group(); lh.position.set(cc[0], top, -cc[1]); g.add(lh);
+          var tower = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.15, 0.8, 20), new THREE.MeshStandardMaterial({ color: col("--surface"), roughness: 0.5 }));
+          tower.position.y = 0.4; tower.castShadow = true; lh.add(tower);
+          [0.14, 0.42].forEach(function (y) { var band = new THREE.Mesh(new THREE.CylinderGeometry(0.135 - y * 0.07, 0.14 - y * 0.07, 0.13, 20), new THREE.MeshStandardMaterial({ color: col("--teal"), roughness: 0.5 })); band.position.y = y; lh.add(band); });
+          var gallery = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.03, 20), new THREE.MeshStandardMaterial({ color: col("--deep") })); gallery.position.y = 0.81; lh.add(gallery);
+          var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), new THREE.MeshStandardMaterial({ color: col("--amber"), emissive: col("--amber"), emissiveIntensity: 1 })); lamp.position.y = 0.9; lh.add(lamp);
+          var roof = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.16, 20), new THREE.MeshStandardMaterial({ color: col("--deep") })); roof.position.y = 1.04; roof.castShadow = true; lh.add(roof);
+          var beam = new THREE.Mesh(new THREE.ConeGeometry(0.16, 1.3, 24, 1, true), new THREE.MeshBasicMaterial({ color: col("--amber"), transparent: true, opacity: dark ? 0.32 : 0.22, side: THREE.DoubleSide, depthWrite: false }));
+          beam.geometry.translate(0, -0.65, 0); beam.rotation.z = Math.PI / 2;
+          var pivot = new THREE.Group(); pivot.position.y = 0.9; pivot.add(beam); lh.add(pivot);
+          if (!reduce) anims.push(function (s) { pivot.rotation.y = s * 0.8; });
+        }
+        if (t.errands > 0) {
+          var pin = new THREE.Group(); pin.position.set(cc[0] + (t.focus ? 0.45 : 0), top, -cc[1] + (t.focus ? 0.15 : 0)); pin.scale.setScalar(1.35); g.add(pin);
+          var prof = [[0, 0], [0.04, 0.1], [0.1, 0.24], [0.15, 0.38], [0.17, 0.5], [0.15, 0.62], [0.09, 0.7], [0, 0.72]].map(function (q) { return new THREE.Vector2(q[0], q[1]); });
+          var drop = new THREE.Mesh(new THREE.LatheGeometry(prof, 24), new THREE.MeshStandardMaterial({ color: col("--amber"), roughness: 0.35 }));
+          drop.castShadow = true; pin.add(drop);
+          var ring = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.018, 8, 32), new THREE.MeshStandardMaterial({ color: col("--amber-strong") })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.5; pin.add(ring);
+          var shadow = new THREE.Mesh(new THREE.CircleGeometry(0.12, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18, depthWrite: false })); shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.005; pin.add(shadow);
+          var badge = pinBadge(t.cat, t.errands); badge.position.y = 1.0; pin.add(badge);
+          var ph = (hash(t.plz) % 628) / 100;
+          if (!reduce) anims.push(function (s) { var y = Math.sin(s * 2 + ph) * 0.05; drop.position.y = y + 0.02; ring.position.y = 0.52 + y; badge.position.y = 1.02 + y; });
+        }
+        if (t.helfers > 0) {
+          var disc = new THREE.Mesh(new THREE.CircleGeometry(Math.min(0.55, 0.22 + t.helfers * 0.08), 40), new THREE.MeshBasicMaterial({ color: col("--teal"), transparent: true, opacity: dark ? 0.35 : 0.25, depthWrite: false }));
+          disc.rotation.x = -Math.PI / 2; disc.position.set(cc[0], top + 0.01, -cc[1]); g.add(disc);
+          var hb = helferBadge(t.helfers); hb.position.set(cc[0], top + 0.78, -cc[1]); g.add(hb);
+          if (!reduce) anims.push(function (s) { disc.material.opacity = (dark ? 0.3 : 0.2) + Math.sin(s * 1.5) * 0.06; });
+        }
+      });
+
+      /* Kompass und Maßstab */
+      var north = canvasSprite(96, 120, function (g2) {
+        g2.fillStyle = tok("--deep"); g2.beginPath(); g2.moveTo(48, 8); g2.lineTo(70, 64); g2.lineTo(48, 52); g2.lineTo(26, 64); g2.closePath(); g2.fill();
+        g2.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g2.textAlign = "center"; g2.fillText("N", 48, 108);
+      }, 0.5);
+      north.position.set(0, 0.5, -6.9); root.add(north);
+      var oneKm = S, bar = new THREE.Mesh(new THREE.BoxGeometry(oneKm, 0.03, 0.06), new THREE.MeshBasicMaterial({ color: col("--deep") }));
+      bar.position.set(4.2, 0.02, 6.0); root.add(bar);
+      var kmLbl = canvasSprite(160, 64, function (g2, w, h) { g2.fillStyle = tok("--deep"); g2.font = "700 40px 'Atkinson Hyperlegible', system-ui, sans-serif"; g2.textAlign = "center"; g2.textBaseline = "middle"; g2.fillText("1 km", w / 2, h / 2); }, 0.22);
+      kmLbl.position.set(4.2, 0.22, 6.0); root.add(kmLbl);
+
+      controls.target.set(0, 0, 0.4); controls.minDistance = 6; controls.maxDistance = 34;
+      resize(); fit();
+      select(data.selected || null); draw();
+      return true;
+    }
+    return {
+      available: function () { return ok; },
+      show: function (data, pick) {
+        onPick = pick;
+        var good = build(data);
+        if (good && !running && !paused) { running = true; requestAnimationFrame(loop); }
+        return good;
+      },
+      setInset: function (px, refit) { inset = px; if (renderer) { resize(); if (refit) fit(); draw(); } },
+      pause: function (on) { paused = on; if (on) running = false; else if (renderer && !running) { running = true; requestAnimationFrame(loop); } },
+      hide: function () { running = false; }
+    };
+  })();
+
+  function mapData() {
+    var geo = GEO.data; if (!geo) return null;
+    var helferRole = state.role === "helfer";
+    var focus = state.mapFocus || (helferRole && state.area ? state.area.plz : null);
+    if (!focus) {
+      var own = state.errands.filter(function (e) { return e.clientId === state.me; })[0];
+      focus = own ? own.pickupArea : state.area ? state.area.plz : "10178";
+    }
+    if (!geo[focus]) {
+      var pre = Object.keys(geo).filter(function (k) { return k.slice(0, 3) === focus.slice(0, 3); })[0] || Object.keys(geo).filter(function (k) { return k.slice(0, 2) === focus.slice(0, 2); })[0];
+      focus = pre || "10178";
+    }
+    var c = geo[focus];
+    var near = [];
+    Object.keys(geo).forEach(function (k) { var d = km(c, geo[k]); if (d < 14) near.push([k, d]); });
+    near.sort(function (a, b) { return a[1] - b[1]; });
+    var pick = near.slice(0, 24), radiusKm = Math.max(2.5, (pick[pick.length - 1] || [0, 3])[1] * 1.08);
+    var tiles = {};
+    function t(plz) {
+      if (tiles[plz]) return tiles[plz];
+      var g = geo[plz]; if (!g || km(c, g) > radiusKm) return null;
+      return (tiles[plz] = { plz: plz, lat: g[0], lng: g[1], name: g[2], errands: 0, helfers: 0, examples: 0, cat: "", focus: plz === focus });
+    }
+    pick.forEach(function (p) { t(p[0]); });
+    var outside = 0;
+    if (helferRole) {
+      state.errands.forEach(function (e) {
+        if (statusOf(e) === "published" && inArea(e.pickupArea)) { var x = t(e.pickupArea); if (x) { x.errands++; x.cat = x.cat || e.category; } else outside++; }
+      });
+    } else {
+      state.helfers.forEach(function (h) { var x = h.plz && t(String(h.plz)); if (x) { x.helfers++; if (h.example) x.examples++; } });
+      state.errands.forEach(function (e) {
+        if (e.clientId === state.me && FINISHED.indexOf(statusOf(e)) < 0) { var x = t(e.pickupArea); if (x) { x.errands++; x.cat = x.cat || e.category; } }
+      });
+    }
+    var list = Object.keys(tiles).map(function (k) { return tiles[k]; });
+    list.sort(function (a, b) { return km(c, [a.lat, a.lng]) - km(c, [b.lat, b.lng]); });
+    return { role: state.role, focus: focus, center: { lat: c[0], lng: c[1] }, radiusKm: Math.round(radiusKm * 100) / 100, tiles: list, selected: tiles[state.mapSel] ? state.mapSel : null, outside: outside };
+  }
+  function mapFallback(msg) {
+    document.body.classList.add("nomap");
+    $("map-sheet").textContent = msg + " " + $("map-sheet").textContent;
+  }
+  function renderMap() {
+    loadGeo();
+    var helferRole = state.role === "helfer";
+    $("map-title").textContent = helferRole ? "Aufträge auf der Karte" : "Helfer in deiner Nähe";
+    $("map-legend").innerHTML = helferRole
+      ? '<span><i style="background:var(--amber);box-shadow:0 0 0 2px var(--amber-strong) inset"></i>offene Aufträge</span><span><i style="background:var(--amber-soft);box-shadow:0 0 0 2px var(--amber-strong) inset"></i>dein Gebiet (Leuchtturm)</span>'
+      : '<span><i style="background:var(--teal)"></i>registrierte Helfer im Gebiet</span><span><i style="background:var(--amber);box-shadow:0 0 0 2px var(--amber-strong) inset"></i>deine laufenden Aufträge</span>';
+    var data = mapData();
+    if (!data) {
+      $("map-chips").innerHTML = "";
+      $("map-sheet").textContent = GEO.failed ? "Die Kartendaten konnten nicht geladen werden." : "Karte wird geladen …";
+      if (GEO.failed) mapFallback("Die Kartendaten konnten nicht geladen werden. Bitte später erneut versuchen.");
+      return;
+    }
+    var ft = data.tiles.filter(function (t) { return t.focus; })[0];
+    $("loc-text").textContent = ft ? ft.plz + " · " + (shortName(ft.name) || "Gebiet") : "Gebiet wählen";
+    var shownTiles = data.tiles.filter(function (t) { return t.focus || t.errands || t.helfers || t.selected; });
+    $("map-chips").innerHTML = shownTiles.map(function (t) {
+      var n = helferRole ? t.errands : t.helfers;
+      return '<button type="button" data-plz="' + esc(t.plz) + '" aria-pressed="' + (t.plz === state.mapSel) + '">' + esc(t.plz) + " " + esc(shortName(t.name)) + "<small>" + (helferRole ? n + (n === 1 ? " Auftrag" : " Aufträge") : n + " Helfer") + "</small></button>";
+    }).join("");
+    var sel = data.tiles.filter(function (t) { return t.plz === state.mapSel; })[0];
+    var where = function (t) { return t.plz + (t.name ? " " + shortName(t.name) : ""); };
+    var sheet;
+    if (helferRole && !state.area) sheet = "Speichere unten dein Gebiet, dann erscheinen die Aufträge auf der Karte.";
+    else if (sel) sheet = helferRole
+      ? (sel.errands ? sel.errands + (sel.errands === 1 ? " offener Auftrag" : " offene Aufträge") + " in " + where(sel) + ". Die Liste unten zeigt nur dieses Gebiet." : "In " + where(sel) + " gibt es gerade keine offenen Aufträge.")
+      : sel.helfers + " registrierte Helfer in " + where(sel) + (sel.examples ? " (davon " + sel.examples + " Beispiel)" : "") + ". Genaue Standorte zeigt FARO nie an.";
+    else sheet = (helferRole ? "Tippe auf ein Gebiet, um nur dessen Aufträge zu sehen." : "Tippe auf ein Gebiet. FARO zeigt nur, wie viele Helfer dort registriert sind, nie wo sie gerade sind.") +
+      " Umkreis ca. " + Math.round(data.radiusKm) + " km um " + where(data.tiles.filter(function (t) { return t.focus; })[0] || data.tiles[0]) + ".";
+    if (helferRole && data.outside) sheet += " " + data.outside + (data.outside === 1 ? " weiterer Auftrag" : " weitere Aufträge") + " in deinem Gebiet " + (data.outside === 1 ? "liegt" : "liegen") + " außerhalb der Karte (siehe Liste).";
+    $("map-sheet").textContent = sheet;
+    if (document.activeElement !== $("m-plz")) $("m-plz").value = data.focus;
+    if (!Map3D.available()) { mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete."); return; }
+    if (!Map3D.show(data, function (plz) { state.mapSel = state.mapSel === plz ? null : plz; render(); })) mapFallback("Die 3D-Karte ist auf diesem Gerät nicht verfügbar. Nutze die Gebiete.");
+  }
+
+  function errorText(e) {
+    var c = e && e.code;
+    if (c === "quota_exceeded") return "Speicher voll. Bitte alte Testaufträge löschen lassen.";
+    if (c === "revoked" || c === "not_granted") return "Kein Zugriff mehr auf die Daten.";
+    return "Das hat nicht geklappt. Bitte noch einmal versuchen.";
+  }
+  function find(id) { return state.errands.filter(function (e) { return e.id === id; })[0]; }
+  function patch(id, p, okMsg) {
+    p.updatedAt = Date.now();
+    state.confirm = null;
+    return store.update(id, p).then(function () { if (okMsg) toast(okMsg); }).catch(function (e) { toast(errorText(e)); render(); });
+  }
+  function checkExpiry() {
+    if (!store) return;
+    state.errands.forEach(function (e) {
+      if (e.clientId === state.me && isExpired(e) && !state.expiring[e.id]) {
+        state.expiring[e.id] = true;
+        store.update(e.id, { status: "expired", updatedAt: Date.now() }).catch(function () { delete state.expiring[e.id]; });
+      }
+    });
+  }
+  function toggleChat(id) {
+    var key = state.role + ":" + id;
+    if (state.chatOpen[key]) delete state.chatOpen[key];
+    else state.chatOpen[key] = true;
+    var anyOpen = state.chatOpen["kunde:" + id] || state.chatOpen["helfer:" + id];
+    if (anyOpen && !state.chatUnsub[id]) {
+      state.chatUnsub[id] = store.subscribeMessages(id, function (list) { state.msgs[id] = list; render(); });
+    } else if (!anyOpen && state.chatUnsub[id]) {
+      state.chatUnsub[id](); delete state.chatUnsub[id];
+    }
+    render();
+  }
+  function send(id, text) {
+    text = (text || "").trim().slice(0, 300);
+    if (!text) return;
+    if (needName()) return;
+    var e = find(id);
+    if (!e || CHAT_STATES.indexOf(e.status) < 0) { toast("Der Chat ist für diesen Auftrag geschlossen."); return; }
+    var role = e.helferId === state.me && state.role === "helfer" ? "helfer" : "kunde";
+    store.sendMessage(id, { from: state.me, role: role, name: state.name, text: text, at: Date.now() })
+      .then(function () { state.chatDraft[id] = ""; render(); })
+      .catch(function (err) { toast(errorText(err)); });
+  }
+
+
+  /* ---------- Blatt (Bottom Sheet) im Uber-Stil ---------- */
+  function setSheet(st) {
+    var sh = $("sheet");
+    if (sh.getAttribute("data-state") === st) return;
+    sh.setAttribute("data-state", st);
+    $("grab").setAttribute("aria-expanded", st === "full" ? "true" : "false");
+    $("grab").setAttribute("aria-label", st === "full" ? "Bereich verkleinern" : "Bereich vergrößern");
+    Map3D.pause(st === "full");
+    setTimeout(syncInset, 320);
+  }
+  function syncInset() {
+    if (document.body.classList.contains("nomap")) return;
+    if ($("sheet").getAttribute("data-state") === "peek") Map3D.setInset($("sheet").offsetHeight, true);
+  }
+  (function initSheet() {
+    var grab = $("grab"), sh = $("sheet"), drag = null;
+    grab.addEventListener("pointerdown", function (ev) { drag = { y: ev.clientY, h: sh.offsetHeight, moved: false }; grab.setPointerCapture(ev.pointerId); sh.classList.add("dragging"); });
+    grab.addEventListener("pointermove", function (ev) {
+      if (!drag) return;
+      var dy = drag.y - ev.clientY; if (Math.abs(dy) > 4) drag.moved = true;
+      sh.style.height = Math.max(160, Math.min(window.innerHeight - 56, drag.h + dy)) + "px";
+    });
+    function end() {
+      if (!drag) return;
+      var h = sh.offsetHeight, moved = drag.moved; drag = null;
+      sh.classList.remove("dragging"); sh.style.height = "";
+      var cur = sh.getAttribute("data-state");
+      if (!moved) setSheet(cur === "full" ? "peek" : "full");
+      else setSheet(h > window.innerHeight * 0.66 ? "full" : "peek");
+    }
+    grab.addEventListener("pointerup", end);
+    grab.addEventListener("pointercancel", end);
+    grab.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setSheet(sh.getAttribute("data-state") === "full" ? "peek" : "full"); } });
+    window.addEventListener("resize", function () { setTimeout(syncInset, 50); });
+    $("btn-profile").addEventListener("click", function () {
+      setSheet("full");
+      state.askName = true;
+      if (state.name) { $("p-name").value = state.name; state.name = ""; }
+      renderProfile();
+      setTimeout(function () { $("p-name").focus(); }, 300);
+    });
+    $("loc-chip").addEventListener("click", function () {
+      setSheet("full");
+      setTimeout(function () { $("map-panel").scrollIntoView({ block: "start" }); $("m-plz").focus(); }, 320);
+    });
+  })();
+  function initTiles() {
+    var ICON = {
+      pickup_click_collect: '<path d="M6 8h12l-1 12H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="2"/>',
+      task_parcel_return: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15 14h-5m0 0 2-2m-2 2 2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      task_parcel_pickup: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 8l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="2"/>',
+      task_key_handover: '<circle cx="8" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12h9m-3 0v3m-3-3v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      task_documents: '<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="2"/>',
+      task_repair_service: '<path d="M14 6a4 4 0 0 0 5 5l-8 8-3-3 8-8a4 4 0 0 0-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+      purchase_errand: '<circle cx="9" cy="20" r="1.5" fill="currentColor"/><circle cx="17" cy="20" r="1.5" fill="currentColor"/><path d="M3 4h2l2.5 11h11L21 8H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>'
+    };
+    var SHORT = { purchase_errand: "Einkaufen", pickup_click_collect: "Click & Collect", task_parcel_return: "Retoure", task_parcel_pickup: "Paket abholen", task_key_handover: "Schlüssel", task_documents: "Dokumente", task_repair_service: "Reparatur" };
+    var html = Object.keys(CATS).map(function (k) {
+      return '<button type="button" class="tile" data-cat="' + k + '"><i><svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--deep)">' + ICON[k] + "</svg></i>" + esc(SHORT[k]) + "</button>";
+    }).join("");
+    $("cat-tiles").innerHTML = html;
+    $("cat-tiles").addEventListener("click", function (ev) {
+      var b = ev.target.closest("button[data-cat]"); if (!b) return;
+      $("f-cat").value = b.getAttribute("data-cat"); updateFormInfo(); setFormOpen(true);
+    });
+  }
+
+  /* ---------- Aktionen ---------- */
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    var act = b.getAttribute("data-act"), id = b.getAttribute("data-id");
+    if (act === "edit-name") { $("p-name").value = state.name; state.name = ""; renderProfile(); $("p-name").focus(); return; }
+    if (act === "edit-area") { $("a-plz").value = state.area.plz; $("a-range").value = state.area.range; state.area = null; renderArea(); render(); $("a-plz").focus(); return; }
+    if (act === "toggle-done") { state.showDone = !state.showDone; render(); return; }
+    var e = id ? find(id) : null;
+    if (id && !e) return;
+    switch (act) {
+      case "confirm-no": state.confirm = null; render(); break;
+      case "cancel": case "release": case "nf":
+        state.confirm = { id: id, kind: act };
+        if (act === "nf" && !state.nfReason[id]) state.nfReason[id] = "payment_required";
+        render(); break;
+      case "cancel-yes":
+        if (e.clientId === state.me && (e.status === "published" || e.status === "accepted")) patch(id, { status: "cancelled" }, "Auftrag storniert.");
+        break;
+      case "release-yes":
+        if (e.helferId === state.me && e.status === "accepted") {
+          var back = !e.deadline || e.example || e.deadline > Date.now() ? "published" : "expired";
+          patch(id, { status: back, helferId: null, helferName: null }, back === "published" ? "Freigegeben. Der Auftrag ist wieder in der Liste." : "Freigegeben. Die Zeit war schon abgelaufen.");
+        }
+        break;
+      case "nf-yes":
+        if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "not_feasible", notFeasibleReason: state.nfReason[id] || "other" }, "Gemeldet. Danke, dass du nichts ausgelegt hast.");
+        break;
+      case "paid":
+        if (e.helferId === state.me && e.status === "accepted" && e.shoppingList) {
+          var cents = centsFromInput(state.receiptDraft[id]);
+          if (!isFinite(cents) || cents <= 0) { toast("Bitte den Betrag vom Kassenbon eingeben."); break; }
+          if (cents > (e.budget || 0)) { toast("Über dem Limit: Die Einmal-Karte würde ablehnen. Frag im Chat, was weg kann."); break; }
+          delete state.receiptDraft[id];
+          patch(id, { status: "picked_up", receipt: cents, pickedUpAt: Date.now() }, "Bezahlt mit der Einmal-Karte: " + euro(cents) + ". Jetzt zur Kundin oder zum Kunden.");
+        }
+        break;
+      case "pickup":
+        if (e.helferId === state.me && e.status === "accepted") patch(id, { status: "picked_up", pickedUpAt: Date.now() }, "Abgeholt. Jetzt zum Ziel.");
+        break;
+      case "deliver":
+        if (e.helferId === state.me && e.status === "picked_up") {
+          var v = (state.pinDraft[id] || "").trim();
+          if (v !== e.pin) { toast("Der PIN stimmt nicht. Bitte bei der Person nachfragen, die empfängt."); break; }
+          delete state.pinDraft[id];
+          if (e.example) patch(id, { status: "completed", deliveredAt: Date.now(), completedAt: Date.now() }, "Zugestellt. Beispiel automatisch bestätigt.");
+          else patch(id, { status: "delivered", deliveredAt: Date.now() }, "Zugestellt. Danke!");
+        }
+        break;
+      case "deliver-receipt":
+        if (e.helferId === state.me && e.status === "picked_up") {
+          if (e.example) patch(id, { status: "completed", deliveredAt: Date.now(), completedAt: Date.now() }, "Abgabe gemeldet. Beispiel automatisch bestätigt.");
+          else patch(id, { status: "delivered", deliveredAt: Date.now() }, "Abgabe gemeldet. Danke!");
+        }
+        break;
+      case "confirm-receipt":
+        if (e.clientId === state.me && e.status === "delivered") patch(id, { status: "completed", completedAt: Date.now() }, "Bestätigt. Der Auftrag ist erledigt.");
+        break;
+      case "redo":
+        if (e.clientId === state.me) prefill(e);
+        break;
+      case "chat": toggleChat(id); break;
+      case "quick": send(id, b.getAttribute("data-text")); break;
+      case "send": send(id, state.chatDraft[id]); break;
+      case "accept":
+        if (statusOf(e) !== "published" || state.busy[id]) break;
+        if (needName()) break;
+        state.busy[id] = true; render();
+        store.claim(id, state.me, state.name).then(function (r) {
+          if (r === "ok") toast("Angenommen. Die genaue Adresse steht jetzt unter „Meine Einsätze“.");
+          else if (r === "busy") toast("Jemand nimmt diesen Auftrag gerade an. Bitte kurz warten.");
+          else toast("Schon vergeben. Schau dir die anderen Aufträge an.");
+        }).catch(function (err) { toast(errorText(err)); }).then(function () { delete state.busy[id]; render(); });
+        break;
+    }
+  });
+  document.addEventListener("input", function (ev) {
+    var t = ev.target;
+    if (!t.getAttribute) return;
+    if (t.getAttribute("data-pin")) { t.value = t.value.replace(/\D/g, "").slice(0, 4); state.pinDraft[t.getAttribute("data-pin")] = t.value; }
+    if (t.getAttribute("data-chat")) state.chatDraft[t.getAttribute("data-chat")] = t.value;
+    if (t.getAttribute("data-receipt")) { t.value = t.value.replace(/[^0-9.,]/g, "").slice(0, 7); state.receiptDraft[t.getAttribute("data-receipt")] = t.value; }
+    if (t.id === "f-from-plz" || t.id === "f-to-plz" || t.id === "a-plz" || t.id === "m-plz") t.value = t.value.replace(/\D/g, "").slice(0, 5);
+  });
+  document.addEventListener("keydown", function (ev) {
+    var t = ev.target;
+    if (ev.key !== "Enter" || !t.getAttribute) return;
+    if (t.getAttribute("data-chat")) { ev.preventDefault(); send(t.getAttribute("data-chat"), t.value); }
+    if (t.id === "p-name") { ev.preventDefault(); saveName(); }
+    if (t.id === "a-plz") { ev.preventDefault(); saveArea(); }
+  });
+  document.addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (t.getAttribute && t.getAttribute("data-nf")) state.nfReason[t.getAttribute("data-nf")] = t.value;
+  });
+  function setRole(r) { state.role = r; state.confirm = null; state.mapSel = null; ls("faro-demo-role", r); render(); $("sheet-body").scrollTop = 0; }
+  $("map-focus-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var v = $("m-plz").value.trim();
+    if (!/^\d{5}$/.test(v)) { toast("Bitte eine fünfstellige PLZ eingeben."); return; }
+    if (!plzKnown(v)) { toast("Die PLZ " + v + " gibt es in Deutschland nicht. Bitte prüfen."); return; }
+    state.mapFocus = v; state.mapSel = null; ls("faro-demo-mapfocus", v); $("m-plz").blur(); render();
+  });
+  $("map-chips").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-plz]"); if (!b) return;
+    var plz = b.getAttribute("data-plz"); state.mapSel = state.mapSel === plz ? null : plz; render();
+  });
+  $("role-kunde").addEventListener("click", function () { setRole("kunde"); });
+  $("role-helfer").addEventListener("click", function () { setRole("helfer"); });
+  $("p-save").addEventListener("click", saveName);
+  $("a-save").addEventListener("click", saveArea);
+
+  /* ---------- Start ---------- */
+  var savedRole = ls("faro-demo-role");
+  if (savedRole === "helfer" || savedRole === "kunde") state.role = savedRole;
+  var savedFocus = ls("faro-demo-mapfocus"); if (/^\d{5}$/.test(savedFocus || "")) state.mapFocus = savedFocus;
+  state.name = ls("faro-demo-name") || "";
+  try { var a = JSON.parse(ls("faro-demo-area") || "null"); if (a && /^\d{5}$/.test(a.plz)) state.area = a; } catch (e) {}
+  initForm();
+  initTiles();
+  loadGeo();
+  setTimeout(syncInset, 400);
+  renderProfile();
+  renderArea();
+  render();
+  setInterval(function () { checkExpiry(); render(); }, 60000);
+
+  function localId() {
+    var id = ls("faro-demo-me");
+    if (!id) { id = "local-" + Math.random().toString(36).slice(2, 10); ls("faro-demo-me", id); }
+    return id;
+  }
+  function use(name) {
+    var c = window.claude;
+    if (!c || typeof c.use !== "function") return Promise.resolve(null);
+    return c.use(name).catch(function () { return null; });
+  }
+  Promise.all([use("db"), use("user")]).then(function (r) {
+    var db = r[0], user = r[1];
+    var idP = user ? user.id().catch(function () { return null; }) : Promise.resolve(null);
+    return idP.then(function (uid) {
+      state.me = uid || localId();
+      store = db ? makeDbStore(db) : makeLocalStore();
+      if (!store.shared) {
+        $("banner").textContent = "Offline-Modus: Aufträge werden nur auf diesem Gerät gespeichert.";
+        $("banner").hidden = false;
+      }
+      store.subscribeHelfers(function (list) { state.helfers = list; if (state.view === "map") render(); });
+      store.subscribe(function (list) {
+        state.errands = list;
+        state.loaded = true;
+        checkExpiry();
+        render();
+      }, function (e) {
+        $("banner").textContent = "Die Verbindung zu den Aufträgen ist unterbrochen. Bitte die Seite neu laden.";
+        $("banner").hidden = false;
+        toast(errorText(e));
+      });
+    });
+  });
+})();
+</script>
